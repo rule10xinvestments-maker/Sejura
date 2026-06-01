@@ -1,0 +1,19 @@
+import { NextResponse } from "next/server";
+import { BookingService } from "@/domain/bookings/service";
+import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
+import { jsonError } from "@/domain/bookings/http";
+import { getCurrentOwnerId } from "@/lib/auth/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export async function GET() {
+  try {
+    const supabase = createSupabaseServerClient();
+    const ownerId = await getCurrentOwnerId(supabase);
+    const service = new BookingService(new SupabaseBookingRepository(supabase));
+    const bookings = await service.listBookings({ ownerId });
+
+    return NextResponse.json({ bookings });
+  } catch (error) {
+    return jsonError(error);
+  }
+}
