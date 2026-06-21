@@ -266,6 +266,16 @@ describe("booking availability and transitions", () => {
     expect(created.calendar_sync_status).toBe("not_required");
   });
 
+  it("creates owner-requested pending manual bookings as pending", async () => {
+    const created = await new BookingService(repository()).createPendingBooking(
+      validInput,
+      { ownerId }
+    );
+
+    expect(created.status).toBe("pending");
+    expect(created.source).toBe("manual_owner");
+  });
+
   it("creates AI chat bookings as pending only", async () => {
     const created = await new BookingService(repository()).createPendingBooking(
       { ...validInput, source: "ai_chat" },
@@ -287,6 +297,16 @@ describe("booking availability and transitions", () => {
     expect(created.status).toBe("confirmed");
     expect(created.nights_count).toBe(2);
     expect(created.total_estimated_price).toBe(500);
+  });
+
+  it("keeps manual confirmed bookings confirmed when calendar reconnect is required", async () => {
+    const created = await new BookingService(requireCalendarRepository()).createManualBooking(
+      validInput,
+      { ownerId }
+    );
+
+    expect(created.status).toBe("confirmed");
+    expect(created.calendar_sync_status).toBe("needs_reconnect");
   });
 
   it("rejects overlapping manual confirmed bookings", async () => {
@@ -352,6 +372,32 @@ describe("booking availability and transitions", () => {
         { ownerId }
       )
     ).rejects.toMatchObject({ code: "NOT_AVAILABLE" });
+  });
+
+  it("does not hard-block availability for overlapping pending bookings", async () => {
+    const repo = repository();
+    repo.bookings.push(
+      booking({
+        id: "pending-booking",
+        status: "pending",
+        start_date: "2026-07-15",
+        end_date: "2026-07-17",
+        confirmed_at: null
+      })
+    );
+
+    await expect(
+      new AvailabilityService(repo).checkAvailability(
+        {
+          propertyId,
+          roomId,
+          startDate: "2026-07-16",
+          endDate: "2026-07-18",
+          guestsCount: 2
+        },
+        { ownerId }
+      )
+    ).resolves.toMatchObject({ available: true });
   });
 
   it("rechecks availability before confirming pending bookings", async () => {

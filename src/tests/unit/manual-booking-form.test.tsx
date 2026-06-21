@@ -138,6 +138,34 @@ describe("ManualBookingForm", () => {
     expect(screen.getByText(/Camera Albastra - pana la 2 oaspeti/)).toBeVisible();
   });
 
+  it("keeps rooms with overlapping pending bookings available and shows a warning", async () => {
+    renderForm({
+      bookings: [
+        booking({
+          status: "pending",
+          confirmed_at: null
+        })
+      ],
+      rooms: [room({ id: "room-1", name: "Camera Verde" })]
+    });
+
+    fireEvent.change(screen.getByLabelText("Sosire"), {
+      target: { value: "2026-08-13" }
+    });
+    fireEvent.change(screen.getByLabelText("Plecare"), {
+      target: { value: "2026-08-15" }
+    });
+    fireEvent.change(screen.getByLabelText("Oaspeti"), {
+      target: { value: "2" }
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Camera Verde - pana la 2 oaspeti/)).toBeVisible();
+    });
+    expect(screen.getByText("Cereri în așteptare în acest interval")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Salveaza rezervarea" })).toBeEnabled();
+  });
+
   it("does not submit when no room is available for the selected stay", async () => {
     const action = vi.fn();
     renderForm({

@@ -5,6 +5,7 @@ import { ManualBookingForm } from "@/components/bookings/manual-booking-form";
 import { BookingDomainError } from "@/domain/bookings/errors";
 import { bookingFormSchema } from "@/domain/bookings/schemas";
 import { BookingService } from "@/domain/bookings/service";
+import { bookingStatusLabels } from "@/domain/bookings/status-labels";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
 import type { BookingRecord } from "@/domain/bookings/types";
 import { GoogleCalendarService } from "@/domain/google-calendar/service";
@@ -17,13 +18,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 type SearchParams = {
   error?: string;
   message?: string;
-};
-
-const statusLabels: Record<BookingRecord["status"], string> = {
-  pending: "In asteptare",
-  confirmed: "Confirmata",
-  cancelled: "Anulata",
-  rejected: "Respinsa"
 };
 
 function pageMessage(key?: string) {
@@ -188,7 +182,7 @@ export default async function BookingsPage({
                   </p>
                 </div>
                 <span className="w-fit rounded-md border border-line px-2 py-1 text-xs font-semibold">
-                  {statusLabels[booking.status]}
+                  {bookingStatusLabels[booking.status]}
                 </span>
               </div>
             </Link>

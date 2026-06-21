@@ -160,8 +160,23 @@ export class BookingService {
 
   async createManualBooking(input: BookingInput, authContext: AuthContext) {
     await this.ensureAvailable(input, authContext);
-    const booking = await this.createBooking(input, authContext, "pending");
-    return this.confirmPendingBookingRecord(booking, authContext);
+    const booking = await this.createBooking(input, authContext, "confirmed");
+    const syncedBooking = await this.syncManualConfirmedBooking(booking, authContext);
+    await this.recordEvent(
+      syncedBooking,
+      "booking_confirmed",
+      "pending",
+      "confirmed",
+      authContext
+    );
+    await this.safeNotify(() => this.notifications?.notifyBookingConfirmed(syncedBooking.id));
+    if (
+      syncedBooking.calendar_sync_status === "failed" ||
+      syncedBooking.calendar_sync_status === "needs_reconnect"
+    ) {
+      await this.safeNotify(() => this.notifications?.notifyCalendarSyncFailed(syncedBooking.id));
+    }
+    return syncedBooking;
   }
 
   async confirmBooking(bookingId: string, authContext: AuthContext) {
@@ -269,6 +284,40 @@ export class BookingService {
       await this.safeNotify(() => this.notifications?.notifyCalendarSyncFailed(updated.id));
     }
     return updated;
+  }
+
+  private async syncManualConfirmedBooking(
+    booking: BookingRecord,
+    authContext: AuthContext
+  ) {
+    const { ownerId } = normalizeAuthContext(authContext);
+    const settings = await this.repository.getPropertySettings(
+      ownerId,
+      booking.property_id
+    );
+    const calendarRequired =
+      settings?.calendar_required_for_confirmation ?? true;
+
+    try {
+      const syncPatch = await this.trySyncConfirmedBooking(
+        booking,
+        authContext,
+        calendarRequired
+      );
+      if (!syncPatch) return booking;
+      return this.repository.updateBooking(ownerId, booking.id, {
+        calendar_sync_status: syncPatch.status,
+        google_calendar_event_id: syncPatch.eventId,
+        calendar_sync_error_code: syncPatch.errorCode,
+        calendar_sync_error_message: syncPatch.errorMessage,
+        calendar_synced_at: syncPatch.syncedAt
+      });
+    } catch (error) {
+      if (error instanceof BookingDomainError && error.code === "NOT_AVAILABLE") {
+        return this.getBooking(booking.id, authContext);
+      }
+      throw error;
+    }
   }
 
   private async ensureAvailable(input: BookingInput, authContext: AuthContext) {

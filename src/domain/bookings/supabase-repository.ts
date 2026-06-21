@@ -170,7 +170,15 @@ export class SupabaseBookingRepository implements BookingRepository {
       .select("*")
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (this.isOverlapConstraintError(error)) {
+        throw new BookingDomainError(
+          "NOT_AVAILABLE",
+          "Exista deja o rezervare confirmata in acest interval."
+        );
+      }
+      throw error;
+    }
     return data;
   }
 

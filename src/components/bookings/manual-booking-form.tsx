@@ -16,6 +16,7 @@ type RoomPreview = {
   room: Room;
   available: boolean;
   reasons: string[];
+  pendingCount: number;
 };
 
 function overlaps(startDate: string, endDate: string, otherStart: string, otherEnd: string) {
@@ -71,16 +72,27 @@ export function ManualBookingForm({
         reasons.push("Exista deja o rezervare suprapusa.");
       }
 
+      const pendingCount = bookings.filter((booking) => {
+        return (
+          booking.room_id === room.id &&
+          booking.status === "pending" &&
+          !booking.deleted_at &&
+          overlaps(startDate, endDate, booking.start_date, booking.end_date)
+        );
+      }).length;
+
       return {
         room,
         available: reasons.length === 0,
-        reasons
+        reasons,
+        pendingCount
       };
     });
   }, [activeRooms, bookings, endDate, guestsCount, hasPreviewInput, startDate]);
 
   const availablePreview = preview.filter((item) => item.available);
   const unavailablePreview = preview.filter((item) => !item.available);
+  const pendingPreview = preview.filter((item) => item.pendingCount > 0);
   const selectedRoom = activeRooms.find((room) => room.id === roomId);
   const selectedPreview = preview.find((item) => item.room.id === roomId);
   const selectedUnavailable = Boolean(hasPreviewInput && selectedPreview && !selectedPreview.available);
@@ -161,8 +173,8 @@ export function ManualBookingForm({
       <label className="grid gap-1 text-sm font-medium">
         Status initial
         <select className="input" name="mode" defaultValue="confirmed">
-          <option value="confirmed">Confirmata manual</option>
-          <option value="pending">In asteptare</option>
+          <option value="confirmed">Confirmată manual</option>
+          <option value="pending">În așteptare</option>
         </select>
       </label>
       <label className="grid gap-1 text-sm font-medium">
@@ -266,6 +278,18 @@ export function ManualBookingForm({
           <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-800">
             Camera selectata nu este disponibila in intervalul ales. Alege o camera disponibila.
           </p>
+        ) : null}
+        {hasPreviewInput && pendingPreview.length > 0 ? (
+          <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+            <p className="font-medium">Cereri în așteptare în acest interval</p>
+            <ul className="mt-1 grid gap-1">
+              {pendingPreview.map(({ room, pendingCount }) => (
+                <li key={room.id}>
+                  {room.name}: {pendingCount} cerere{pendingCount === 1 ? "" : "i"} în așteptare
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
       </div>
 
