@@ -412,6 +412,7 @@ export class BookingService {
     calendarSyncResult?: CalendarSyncResult | null
   ) {
     const timestamp = new Date().toISOString();
+    const previousStatus = booking.status;
     const patch: Partial<BookingRecord> = {
       status: nextStatus,
       confirmed_at: nextStatus === "confirmed" ? timestamp : booking.confirmed_at,
@@ -437,7 +438,7 @@ export class BookingService {
     await this.recordEvent(
       updated,
       `booking_${nextStatus}`,
-      booking.status,
+      previousStatus,
       nextStatus,
       authContext
     );

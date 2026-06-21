@@ -417,6 +417,83 @@ describe("booking availability and transitions", () => {
     });
   });
 
+  it("confirms a pending booking when there is no confirmed conflict", async () => {
+    const repo = repository();
+    const service = new BookingService(repo);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+    const confirmed = await service.confirmBooking(pending.id, { ownerId });
+
+    expect(confirmed.status).toBe("confirmed");
+    expect(repo.bookingEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          booking_id: pending.id,
+          event_type: "booking_confirmed",
+          previous_status: "pending",
+          new_status: "confirmed"
+        })
+      ])
+    );
+  });
+
+  it("allows confirming when another overlapping booking is still pending", async () => {
+    const repo = repository();
+    const service = new BookingService(repo);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+    repo.bookings.push(
+      booking({
+        id: "other-pending",
+        status: "pending",
+        start_date: validInput.startDate,
+        end_date: validInput.endDate,
+        confirmed_at: null
+      })
+    );
+
+    await expect(service.confirmBooking(pending.id, { ownerId })).resolves.toMatchObject({
+      status: "confirmed"
+    });
+  });
+
+  it("allows confirming when a confirmed booking overlaps a different room", async () => {
+    const repo = repository();
+    const service = new BookingService(repo);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+    repo.bookings.push(
+      booking({
+        id: "other-room-confirmed",
+        room_id: otherRoomId,
+        start_date: validInput.startDate,
+        end_date: validInput.endDate
+      })
+    );
+
+    await expect(service.confirmBooking(pending.id, { ownerId })).resolves.toMatchObject({
+      status: "confirmed"
+    });
+  });
+
+  it("keeps a pending booking and creates no duplicate when confirmation conflicts", async () => {
+    const repo = repository();
+    const service = new BookingService(repo);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+    repo.bookings.push(
+      booking({
+        id: "blocking-confirmed",
+        start_date: validInput.startDate,
+        end_date: validInput.endDate
+      })
+    );
+    const bookingCount = repo.bookings.length;
+
+    await expect(service.confirmBooking(pending.id, { ownerId })).rejects.toMatchObject({
+      code: "NOT_AVAILABLE"
+    });
+
+    expect(repo.bookings).toHaveLength(bookingCount);
+    expect((await service.getBooking(pending.id, { ownerId })).status).toBe("pending");
+  });
+
   it("confirming an already confirmed booking is idempotent", async () => {
     const repo = requireCalendarRepository();
     const port = syncedPort("google-event-idempotent");

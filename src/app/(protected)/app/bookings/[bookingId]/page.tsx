@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { confirmationErrorKey } from "@/domain/bookings/confirmation-errors";
 import { BookingDomainError } from "@/domain/bookings/errors";
 import { BookingService } from "@/domain/bookings/service";
+import { bookingStatusLabels } from "@/domain/bookings/status-labels";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
 import type { BookingRecord } from "@/domain/bookings/types";
 import { GoogleCalendarService } from "@/domain/google-calendar/service";
@@ -11,11 +13,9 @@ import { NotificationService } from "@/domain/notifications/service";
 import { getCurrentOwnerId } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const statusLabels: Record<BookingRecord["status"], string> = {
-  pending: "In asteptare",
-  confirmed: "Confirmata",
-  cancelled: "Anulata",
-  rejected: "Respinsa"
+type SearchParams = {
+  error?: string;
+  message?: string;
 };
 
 const eventLabels: Record<string, string> = {
@@ -25,10 +25,32 @@ const eventLabels: Record<string, string> = {
   booking_cancelled: "Rezervare anulata"
 };
 
+function pageMessage(key?: string) {
+  if (key === "confirmed") return "Rezervarea a fost confirmata.";
+  if (key === "rejected") return "Rezervarea a fost respinsa.";
+  if (key === "cancelled") return "Rezervarea a fost anulata.";
+  return null;
+}
+
+function pageError(key?: string) {
+  if (key === "confirmation-conflict") {
+    return "Nu se poate confirma rezervarea. Camera este deja ocupata in acest interval.";
+  }
+  if (key === "confirmation-validation") {
+    return "Verifica datele rezervarii inainte de confirmare.";
+  }
+  if (key === "calendar-sync") {
+    return "Rezervarea ramane in asteptare deoarece sincronizarea calendarului nu a reusit.";
+  }
+  return null;
+}
+
 export default async function BookingDetailPage({
-  params
+  params,
+  searchParams
 }: {
   params: { bookingId: string };
+  searchParams?: SearchParams;
 }) {
   const supabase = createSupabaseServerClient();
   const ownerId = await getCurrentOwnerId(supabase);
@@ -63,12 +85,15 @@ export default async function BookingDetailPage({
 
     try {
       await serverService.confirmBooking(params.bookingId, { ownerId: serverOwnerId });
-    } catch {
-      redirect("/app/bookings?error=unavailable");
+    } catch (error) {
+      const key = confirmationErrorKey(error);
+      redirect(`/app/bookings/${params.bookingId}?error=${key}`);
     }
 
     revalidatePath("/app/bookings");
-    redirect("/app/bookings?message=confirmed");
+    revalidatePath(`/app/bookings/${params.bookingId}`);
+    revalidatePath("/app/calendar");
+    redirect(`/app/bookings/${params.bookingId}?message=confirmed`);
   }
 
   async function rejectBooking() {
@@ -83,7 +108,8 @@ export default async function BookingDetailPage({
     );
     await serverService.rejectBooking(params.bookingId, { ownerId: serverOwnerId });
     revalidatePath("/app/bookings");
-    redirect("/app/bookings?message=rejected");
+    revalidatePath(`/app/bookings/${params.bookingId}`);
+    redirect(`/app/bookings/${params.bookingId}?message=rejected`);
   }
 
   async function cancelBooking() {
@@ -98,7 +124,9 @@ export default async function BookingDetailPage({
     );
     await serverService.cancelBooking(params.bookingId, { ownerId: serverOwnerId });
     revalidatePath("/app/bookings");
-    redirect("/app/bookings?message=cancelled");
+    revalidatePath(`/app/bookings/${params.bookingId}`);
+    revalidatePath("/app/calendar");
+    redirect(`/app/bookings/${params.bookingId}?message=cancelled`);
   }
 
   async function retryCalendarSync() {
@@ -121,6 +149,8 @@ export default async function BookingDetailPage({
     failed: "Sincronizare esuata",
     needs_reconnect: "Necesita reconectare"
   };
+  const successMessage = pageMessage(searchParams?.message);
+  const errorMessage = pageError(searchParams?.error);
 
   return (
     <div className="space-y-5">
@@ -128,6 +158,16 @@ export default async function BookingDetailPage({
         Inapoi la rezervari
       </Link>
       <section className="panel">
+        {successMessage ? (
+          <p className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            {successMessage}
+          </p>
+        ) : null}
+        {errorMessage ? (
+          <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+            {errorMessage}
+          </p>
+        ) : null}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-clay">Detalii rezervare</p>
@@ -138,7 +178,7 @@ export default async function BookingDetailPage({
             </p>
           </div>
           <span className="w-fit rounded-md border border-line px-2 py-1 text-xs font-semibold">
-            {statusLabels[booking.status]}
+            {bookingStatusLabels[booking.status]}
           </span>
         </div>
 
