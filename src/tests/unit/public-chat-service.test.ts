@@ -306,13 +306,14 @@ function createPublicChatSupabase(options?: {
   aiEnabled?: boolean;
   setupReady?: boolean;
   insertFails?: boolean;
+  rooms?: Row[];
 }) {
   const context = propertyContext();
   if (options?.publicEnabled === false && context.publicPage) {
     context.publicPage.is_public = false;
   }
   if (options?.setupReady === false) {
-    context.property.status = "setup_incomplete";
+    context.property.rules = "";
   }
   if (options?.publicBookingEnabled === false && context.settings) {
     context.settings.public_booking_enabled = false;
@@ -323,6 +324,21 @@ function createPublicChatSupabase(options?: {
 
   const conversations: Row[] = [];
   const messages: Row[] = [];
+  const rooms =
+    options?.rooms ??
+    [
+      {
+        id: "room-1",
+        owner_id: "owner-1",
+        property_id: "property-1",
+        name: "Camera Test",
+        max_guests: 2,
+        base_price_per_night: 250,
+        status: "active",
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z"
+      }
+    ];
 
   function selectBuilder(table: string) {
     const filters: Array<(row: Row) => boolean> = [];
@@ -333,6 +349,8 @@ function createPublicChatSupabase(options?: {
           ? [context.publicPage]
           : table === "property_settings"
             ? [context.settings]
+            : table === "rooms"
+              ? rooms
             : table === "conversations"
               ? conversations
               : [];
@@ -346,6 +364,12 @@ function createPublicChatSupabase(options?: {
         filters.push((row) => row[column] === value);
         return api;
       },
+      order: async () => ({
+        data: rows.filter(Boolean).filter((row) =>
+          filters.every((filter) => filter(row as Row))
+        ),
+        error: null
+      }),
       maybeSingle: async () => ({
         data: rows.filter(Boolean).find((row) => filters.every((filter) => filter(row as Row))) ?? null,
         error: null
@@ -464,6 +488,78 @@ describe("public chat runtime safety", () => {
         createPublicChatSupabase({ publicBookingEnabled: false }).client
       ).startConversation("pensiunea-test")
     ).rejects.toMatchObject({ code: "SETUP_INCOMPLETE" });
+  });
+
+  it("reports public page readiness reasons for disabled public bookings", async () => {
+    const readiness = await new PublicConversationService(
+      createPublicChatSupabase({ publicBookingEnabled: false }).client
+    ).getPublicPageReadiness("pensiunea-test");
+
+    expect(readiness).toMatchObject({
+      ok: false,
+      reason: "PUBLIC_BOOKINGS_DISABLED"
+    });
+  });
+
+  it("reports public page readiness reasons for disabled AI", async () => {
+    const readiness = await new PublicConversationService(
+      createPublicChatSupabase({ aiEnabled: false }).client
+    ).getPublicPageReadiness("pensiunea-test");
+
+    expect(readiness).toMatchObject({
+      ok: false,
+      reason: "AI_DISABLED"
+    });
+  });
+
+  it("reports public page readiness reasons when no active rooms exist", async () => {
+    const readiness = await new PublicConversationService(
+      createPublicChatSupabase({ rooms: [] }).client
+    ).getPublicPageReadiness("pensiunea-test");
+
+    expect(readiness).toMatchObject({
+      ok: false,
+      reason: "NO_ACTIVE_ROOMS"
+    });
+  });
+
+  it("allows pending public booking mode when setup is complete and auto-confirmation is disabled", async () => {
+    const fake = createPublicChatSupabase();
+    const readiness = await new PublicConversationService(
+      fake.client
+    ).getPublicPageReadiness("pensiunea-test");
+
+    expect(readiness).toMatchObject({
+      ok: true,
+      reason: "READY"
+    });
+    expect(readiness.context?.property.status).toBe("ready_pending_mode");
+    expect(readiness.context?.settings?.allow_auto_confirmation).toBe(false);
+  });
+
+  it("treats draft status as available when pilot-safe setup gates pass", async () => {
+    const fake = createPublicChatSupabase();
+    const service = new PublicConversationService(fake.client);
+    const context = await service.getPublicPropertyBySlug("pensiunea-test");
+    if (context) context.property.status = "draft";
+
+    const readiness = await service.getPublicPageReadiness("pensiunea-test");
+
+    expect(readiness).toMatchObject({
+      ok: true,
+      reason: "READY"
+    });
+  });
+
+  it("reports unknown slugs safely", async () => {
+    const readiness = await new PublicConversationService(
+      createPublicChatSupabase().client
+    ).getPublicPageReadiness("alta-pensiune");
+
+    expect(readiness).toMatchObject({
+      ok: false,
+      reason: "PROPERTY_NOT_FOUND"
+    });
   });
 
   it("allows public page flow when public page, AI, and public bookings are enabled", async () => {

@@ -9,9 +9,15 @@ export default async function PublicPropertyPage({
 }) {
   const supabase = createSupabaseServiceRoleClient();
   const service = new PublicConversationService(supabase);
-  const context = await service.getPublicPropertyBySlug(params.propertySlug);
+  const readiness = await service.getPublicPageReadiness(params.propertySlug);
+  const context = readiness.context;
 
-  if (!context || !context.publicPage?.is_public || !context.publicPage.chat_enabled) {
+  if (
+    !context ||
+    readiness.reason === "PROPERTY_NOT_FOUND" ||
+    readiness.reason === "PROPERTY_DISABLED" ||
+    readiness.reason === "PUBLIC_DISABLED"
+  ) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
         <section className="panel">
@@ -21,11 +27,7 @@ export default async function PublicPropertyPage({
     );
   }
 
-  if (
-    !service.isSetupReady(context) ||
-    !context.settings?.ai_enabled ||
-    !context.settings.public_booking_enabled
-  ) {
+  if (!readiness.ok) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
         <section className="panel">
@@ -35,23 +37,7 @@ export default async function PublicPropertyPage({
     );
   }
 
-  const { data: rooms } = await supabase
-    .from("rooms")
-    .select("name, max_guests, base_price_per_night")
-    .eq("property_id", context.property.id)
-    .eq("owner_id", context.property.owner_id)
-    .eq("status", "active")
-    .order("created_at", { ascending: true });
-
-  if (!rooms || rooms.length === 0) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <section className="panel">
-          <p>Rezervarile online nu sunt disponibile momentan pentru aceasta pensiune.</p>
-        </section>
-      </main>
-    );
-  }
+  const rooms = readiness.rooms;
 
   return (
     <main className="min-h-screen bg-mist">

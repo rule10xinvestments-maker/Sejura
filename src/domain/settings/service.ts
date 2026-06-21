@@ -63,12 +63,12 @@ export async function updatePilotSetting(
   if (key === "public_booking_enabled") {
     const { error: publicPageError } = await supabase
       .from("property_public_pages")
-      .update({
+      .upsert({
+        owner_id: ownerId,
+        property_id: propertyId,
         is_public: enabled,
         chat_enabled: enabled
-      })
-      .eq("owner_id", ownerId)
-      .eq("property_id", propertyId);
+      }, { onConflict: "property_id" });
 
     if (publicPageError) {
       throw publicPageError;

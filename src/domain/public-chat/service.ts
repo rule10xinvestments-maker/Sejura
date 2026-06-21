@@ -18,6 +18,27 @@ import type { AppSupabaseClient } from "@/lib/supabase/types";
 export const jonnyIntro =
   "Buna, sunt Jonny, asistentul de rezervari al pensiunii. Te pot ajuta cu disponibilitatea si cererea de cazare.";
 
+export type PublicPageReadinessReason =
+  | "READY"
+  | "PROPERTY_NOT_FOUND"
+  | "PROPERTY_DISABLED"
+  | "PUBLIC_DISABLED"
+  | "PUBLIC_BOOKINGS_DISABLED"
+  | "AI_DISABLED"
+  | "SETUP_INCOMPLETE"
+  | "NO_ACTIVE_ROOMS";
+
+export type PublicPageReadiness = {
+  ok: boolean;
+  reason: PublicPageReadinessReason;
+  context: PublicPropertyContext | null;
+  rooms: Array<{
+    name: string;
+    max_guests: number;
+    base_price_per_night: number | null;
+  }>;
+};
+
 export class PublicConversationService {
   constructor(private supabase: AppSupabaseClient) {}
 
@@ -62,26 +83,115 @@ export class PublicConversationService {
   isSetupReady(context: PublicPropertyContext) {
     return Boolean(
       context.property.name &&
+        context.property.contact_phone &&
+        context.property.contact_email &&
+        context.property.city &&
         context.property.check_in_time &&
         context.property.check_out_time &&
-        (context.property.status === "ready_pending_mode" ||
-          context.property.status === "ready_auto_confirm_mode")
+        context.property.rules &&
+        context.property.status !== "disabled"
     );
   }
 
-  async startConversation(propertySlug: string, publicSessionId?: string) {
+  async getPublicPageReadiness(propertySlug: string): Promise<PublicPageReadiness> {
     const context = await this.getPublicPropertyBySlug(propertySlug);
+
+    if (!context) {
+      return {
+        ok: false,
+        reason: "PROPERTY_NOT_FOUND",
+        context: null,
+        rooms: []
+      };
+    }
+
+    if (context.property.status === "disabled") {
+      return {
+        ok: false,
+        reason: "PROPERTY_DISABLED",
+        context,
+        rooms: []
+      };
+    }
+
+    if (!context.publicPage?.is_public || !context.publicPage.chat_enabled) {
+      return {
+        ok: false,
+        reason: "PUBLIC_DISABLED",
+        context,
+        rooms: []
+      };
+    }
+
+    if (!context.settings?.public_booking_enabled) {
+      return {
+        ok: false,
+        reason: "PUBLIC_BOOKINGS_DISABLED",
+        context,
+        rooms: []
+      };
+    }
+
+    if (!context.settings.ai_enabled) {
+      return {
+        ok: false,
+        reason: "AI_DISABLED",
+        context,
+        rooms: []
+      };
+    }
+
+    if (!this.isSetupReady(context)) {
+      return {
+        ok: false,
+        reason: "SETUP_INCOMPLETE",
+        context,
+        rooms: []
+      };
+    }
+
+    const { data: rooms, error } = await this.supabase
+      .from("rooms")
+      .select("name, max_guests, base_price_per_night")
+      .eq("property_id", context.property.id)
+      .eq("owner_id", context.property.owner_id)
+      .eq("status", "active")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    if (!rooms || rooms.length === 0) {
+      return {
+        ok: false,
+        reason: "NO_ACTIVE_ROOMS",
+        context,
+        rooms: []
+      };
+    }
+
+    return {
+      ok: true,
+      reason: "READY",
+      context,
+      rooms
+    };
+  }
+
+  async startConversation(propertySlug: string, publicSessionId?: string) {
+    const readiness = await this.getPublicPageReadiness(propertySlug);
+    const context = readiness.context;
     if (!context) {
       throw new PublicChatError("PUBLIC_PAGE_DISABLED", "Pagina nu exista.");
     }
-    if (!context.publicPage?.is_public || !context.publicPage.chat_enabled) {
+    if (
+      readiness.reason === "PUBLIC_DISABLED" ||
+      readiness.reason === "PROPERTY_DISABLED"
+    ) {
       throw new PublicChatError("PUBLIC_PAGE_DISABLED", "Pagina publica este dezactivata.");
     }
-    if (
-      !this.isSetupReady(context) ||
-      !context.settings?.ai_enabled ||
-      !context.settings.public_booking_enabled
-    ) {
+    if (!readiness.ok) {
       throw new PublicChatError("SETUP_INCOMPLETE", "Configurarea este incompleta.");
     }
 
@@ -119,11 +229,12 @@ export class PublicConversationService {
     conversationId: string,
     sessionContext: SessionContext
   ) {
-    const propertyContext = sessionContext.propertySlug
-      ? await this.getPublicPropertyBySlug(sessionContext.propertySlug)
+    const readiness = sessionContext.propertySlug
+      ? await this.getPublicPageReadiness(sessionContext.propertySlug)
       : null;
+    const propertyContext = readiness?.context ?? null;
     if (sessionContext.propertySlug) {
-      if (!propertyContext || !this.isPublicEnabled(propertyContext) || !this.isSetupReady(propertyContext)) {
+      if (!readiness?.ok || !propertyContext) {
         throw new PublicChatError(
           "CONVERSATION_ACCESS_DENIED",
           "Conversatia nu poate fi accesata."

@@ -92,6 +92,20 @@ function settingsSupabase() {
               }
             };
             return updateApi;
+          },
+          upsert: (payload: Row) => {
+            const existing = tables[table].find(
+              (row) => row.property_id === payload.property_id
+            );
+            if (existing) {
+              Object.assign(existing, payload);
+            } else {
+              tables[table].push(payload);
+            }
+            return {
+              then: (resolve: (value: unknown) => void) =>
+                Promise.resolve({ data: payload, error: null }).then(resolve)
+            };
           }
         };
         return api;
