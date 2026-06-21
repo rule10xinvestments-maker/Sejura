@@ -63,6 +63,7 @@ type Row = Record<string, unknown>;
 function createAiBookingFlowSupabase(options?: {
   notificationInsertFails?: boolean;
   rooms?: Row[];
+  bookings?: Row[];
 }) {
   const context = propertyContext();
   const room = {
@@ -99,7 +100,7 @@ function createAiBookingFlowSupabase(options?: {
     conversation_messages: [],
     ai_tool_calls: [],
     rooms,
-    bookings: [],
+    bookings: options?.bookings ?? [],
     booking_events: [],
     room_blocks: [],
     owner_notifications: [],
@@ -227,6 +228,76 @@ function createAiBookingFlowSupabase(options?: {
   } as never;
 
   return { client, rows, calls };
+}
+
+function pilotRoom(
+  id: string,
+  name: string,
+  maxGuests: number,
+  price: number
+): Row {
+  return {
+    id,
+    owner_id: "owner-1",
+    property_id: "property-1",
+    name,
+    max_guests: maxGuests,
+    base_price_per_night: price,
+    status: "active",
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z"
+  };
+}
+
+function pilotBooking(patch: Row): Row {
+  return {
+    id: "booking-1",
+    owner_id: "owner-1",
+    property_id: "property-1",
+    room_id: "room-double-2",
+    guest_name: "Oaspete existent",
+    guest_phone: "0700000000",
+    guest_email: null,
+    guest_notes: null,
+    start_date: "2026-12-03",
+    end_date: "2026-12-15",
+    guests_count: 2,
+    price_per_night: 250,
+    nights_count: 12,
+    total_estimated_price: 3000,
+    currency: "RON",
+    status: "confirmed",
+    source: "manual_owner",
+    conversation_id: null,
+    calendar_sync_status: "not_required",
+    google_calendar_event_id: null,
+    calendar_sync_error_code: null,
+    calendar_sync_error_message: null,
+    calendar_synced_at: null,
+    confirmed_at: "2026-01-01T00:00:00.000Z",
+    cancelled_at: null,
+    rejected_at: null,
+    created_by_actor_type: "owner",
+    created_by_owner_id: "owner-1",
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    deleted_at: null,
+    ...patch
+  };
+}
+
+function createPilotAvailabilitySupabase(options?: {
+  bookings?: Row[];
+}) {
+  return createAiBookingFlowSupabase({
+    rooms: [
+      pilotRoom("room-double-1", "Camera Dubla 1", 2, 250),
+      pilotRoom("room-double-2", "Camera Dubla 2", 2, 250),
+      pilotRoom("room-triple-1", "Camera Tripla 1", 3, 320),
+      pilotRoom("room-family", "Apartament Familie", 4, 450)
+    ],
+    bookings: options?.bookings
+  });
 }
 
 function createPublicChatSupabase(options?: {
@@ -533,6 +604,122 @@ describe("public chat runtime safety", () => {
       ])
     );
     expect(fake.rows.bookings).toHaveLength(0);
+  });
+
+  it("excludes a room with an overlapping confirmed manual booking from Jonny availability", async () => {
+    const fake = createPilotAvailabilitySupabase({
+      bookings: [
+        pilotBooking({
+          id: "confirmed-camera-dubla-2",
+          room_id: "room-double-2",
+          status: "confirmed",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        })
+      ]
+    });
+    process.env.OPENAI_API_KEY = "test-key";
+
+    const result = await new AiReceptionistService(fake.client).handlePublicMessage(
+      "conversation-1",
+      "Aveti liber 3-15 decembrie 2026 pentru 2 persoane?",
+      { publicSessionId: "session-1" }
+    );
+    delete process.env.OPENAI_API_KEY;
+
+    expect(result.message).toContain("Am verificat disponibilitatea");
+    expect(result.message).toContain("Camera Dubla 1");
+    expect(result.message).toContain("Camera Tripla 1");
+    expect(result.message).toContain("Apartament Familie");
+    expect(result.message).not.toContain("Camera Dubla 2");
+    expect(fake.rows.bookings).toHaveLength(1);
+    const availabilityCall = fake.rows.ai_tool_calls.find(
+      (call) => call.tool_name === "check_availability"
+    );
+    expect(availabilityCall?.output).toMatchObject({
+      available_rooms: expect.arrayContaining([
+        expect.objectContaining({ room_id: "room-double-1" }),
+        expect.objectContaining({ room_id: "room-triple-1" }),
+        expect.objectContaining({ room_id: "room-family" })
+      ])
+    });
+    expect(availabilityCall?.output).toMatchObject({
+      available_rooms: expect.not.arrayContaining([
+        expect.objectContaining({ room_id: "room-double-2" })
+      ])
+    });
+  });
+
+  it("does not hard-block Jonny availability for an overlapping pending booking", async () => {
+    const fake = createPilotAvailabilitySupabase({
+      bookings: [
+        pilotBooking({
+          id: "pending-camera-dubla-2",
+          room_id: "room-double-2",
+          status: "pending",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15",
+          confirmed_at: null
+        })
+      ]
+    });
+    process.env.OPENAI_API_KEY = "test-key";
+
+    const result = await new AiReceptionistService(fake.client).handlePublicMessage(
+      "conversation-1",
+      "Aveti liber 3-15 decembrie 2026 pentru 2 persoane?",
+      { publicSessionId: "session-1" }
+    );
+    delete process.env.OPENAI_API_KEY;
+
+    expect(result.message).toContain("Camera Dubla 2");
+    expect(result.message).not.toContain("este confirmata");
+    expect(fake.rows.bookings).toHaveLength(1);
+    const availabilityCall = fake.rows.ai_tool_calls.find(
+      (call) => call.tool_name === "check_availability"
+    );
+    expect(availabilityCall?.output).toMatchObject({
+      available_rooms: expect.arrayContaining([
+        expect.objectContaining({ room_id: "room-double-2" })
+      ])
+    });
+  });
+
+  it("rejects choosing a confirmed-blocked room outside the last availability result without creating a booking", async () => {
+    const fake = createPilotAvailabilitySupabase({
+      bookings: [
+        pilotBooking({
+          id: "confirmed-camera-dubla-2",
+          room_id: "room-double-2",
+          status: "confirmed",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        })
+      ]
+    });
+    process.env.OPENAI_API_KEY = "test-key";
+    const service = new AiReceptionistService(fake.client);
+    await service.handlePublicMessage(
+      "conversation-1",
+      "Aveti liber 3-15 decembrie 2026 pentru 2 persoane?",
+      { publicSessionId: "session-1" }
+    );
+
+    const result = await service.handlePublicMessage(
+      "conversation-1",
+      "Vreau Camera Dubla 2.",
+      { publicSessionId: "session-1" }
+    );
+    delete process.env.OPENAI_API_KEY;
+
+    expect(result.message).toContain("alegi una dintre camerele gasite disponibile");
+    expect(fake.rows.bookings).toHaveLength(1);
+    expect(fake.rows.bookings[0].id).toBe("confirmed-camera-dubla-2");
+    expect(
+      fake.rows.ai_tool_calls.filter(
+        (call) => call.tool_name === "create_pending_booking"
+      )
+    ).toHaveLength(0);
   });
 
   it("asks for exact dates when guest only says weekendul viitor", async () => {
