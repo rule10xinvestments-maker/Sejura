@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RoomFormState } from "@/domain/rooms/form-state";
 import type { Room } from "@/domain/rooms/types";
@@ -17,6 +17,10 @@ type RoomFormProps = {
 
 export function RoomForm({ propertyId, room, action }: RoomFormProps) {
   const router = useRouter();
+  const formId = useId();
+  const roomNameId = `${formId}-room-name`;
+  const roomNameHelperId = `${formId}-room-name-helper`;
+  const roomNameErrorId = `${formId}-room-name-error`;
   const [state, setState] = useState<RoomFormState>({});
   const [isPending, startTransition] = useTransition();
 
@@ -38,21 +42,33 @@ export function RoomForm({ propertyId, room, action }: RoomFormProps) {
       <input name="property_id" type="hidden" value={propertyId} />
       {room ? <input name="room_id" type="hidden" value={room.id} /> : null}
 
-      <label className="block space-y-1">
-        <span className="label">{"Nume camer\u0103/unitate"}</span>
+      <div className="block space-y-1">
+        <label className="label block" htmlFor={roomNameId}>
+          {"Nume camer\u0103/unitate"}
+        </label>
         <input
-          aria-describedby={state.errors?.name ? "room-name-error" : undefined}
+          aria-describedby={
+            state.errors?.name
+              ? `${roomNameHelperId} ${roomNameErrorId}`
+              : roomNameHelperId
+          }
           aria-invalid={Boolean(state.errors?.name)}
           className="field"
           defaultValue={room?.name ?? ""}
+          id={roomNameId}
           name="name"
         />
+        <span className="block text-sm text-ink/65" id={roomNameHelperId}>
+          {
+            'Foloseste un nume real cu tipul inclus, de exemplu "Camera dubla Verde" sau "Apartament familie".'
+          }
+        </span>
         {state.errors?.name ? (
-          <span className="text-sm text-red-700" id="room-name-error">
+          <span className="text-sm text-red-700" id={roomNameErrorId}>
             {state.errors.name}
           </span>
         ) : null}
-      </label>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block space-y-1">

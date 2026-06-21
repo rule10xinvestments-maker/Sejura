@@ -58,6 +58,11 @@ describe("RoomForm", () => {
       screen.getByRole("button", { name: "Salveaz\u0103 camera" })
     ).toBeVisible();
     expect(screen.getByLabelText("Nume camer\u0103/unitate")).toBeVisible();
+    expect(
+      screen.getByText(
+        'Foloseste un nume real cu tipul inclus, de exemplu "Camera dubla Verde" sau "Apartament familie".'
+      )
+    ).toBeVisible();
     expect(screen.getByLabelText("Oaspe\u021bi maximi")).toBeVisible();
     expect(screen.getByLabelText("Pre\u021b/noapte (RON)")).toBeVisible();
 

@@ -25,6 +25,10 @@ export function getActivationStatus({
       missingRequirements.push("Completeaza datele de contact.");
     }
 
+    if (!property.city) {
+      missingRequirements.push("Adauga orasul sau localitatea proprietatii.");
+    }
+
     if (!property.check_in_time || !property.check_out_time) {
       missingRequirements.push("Completeaza orele de check-in si check-out.");
     }
@@ -41,18 +45,14 @@ export function getActivationStatus({
   if (!settings) {
     missingRequirements.push("Setarile sigure ale proprietatii lipsesc.");
   } else {
-    if (settings.ai_enabled) {
-      missingRequirements.push("AI trebuie sa ramana dezactivat in Sprint 1.");
-    }
-
-    if (settings.public_booking_enabled) {
+    if (settings.public_booking_enabled && !settings.ai_enabled) {
       missingRequirements.push(
-        "Rezervarile publice nu pot fi activate cat timp AI este dezactivat."
+        "Jonny trebuie activat inaintea cererilor publice de rezervare."
       );
     }
 
     if (settings.allow_auto_confirmation) {
-      missingRequirements.push("Confirmarea automata trebuie sa ramana dezactivata.");
+      missingRequirements.push("Pastreaza confirmarea automata dezactivata.");
     }
   }
 

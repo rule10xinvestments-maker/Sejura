@@ -16,7 +16,7 @@
 | `EMAIL_PROVIDER_API_KEY` | Server only | Optional | Owner email alerts | Missing key should fail safely. |
 | `EMAIL_FROM_ADDRESS` | Server only | Optional | Owner email alerts | Configure only when email provider is active. |
 | `EMAIL_FROM_NAME` | Server only | Optional | Owner email alerts | Configure only when email provider is active. |
-| `GOOGLE_CLIENT_ID` | Server only | Conditional | Google Calendar OAuth | Needed only if calendar connection is used in pilot. |
+| `GOOGLE_CLIENT_ID` | Server only | Conditional | Google Calendar OAuth | Needed if calendar connection or sync status is part of the dry run. |
 | `GOOGLE_CLIENT_SECRET` | Server only | Conditional | Google Calendar OAuth | Never expose publicly. |
 | `GOOGLE_CALENDAR_REDIRECT_URI` | Server only | Conditional | Google OAuth callback | Must match provider configuration. |
 | `GOOGLE_TOKEN_ENCRYPTION_KEY` | Server only | Conditional | Encrypting Google tokens | Required if calendar OAuth is enabled; 32+ characters. |
@@ -27,6 +27,9 @@
 - Public variables may start with `NEXT_PUBLIC_`.
 - Secrets must never start with `NEXT_PUBLIC_`.
 - Keep `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, Google secrets, and email provider keys server-only.
+- Confirm `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, and `EMAIL_PROVIDER_API_KEY` are not present in browser-visible config, HTML, logs, screenshots, or client bundles.
+- Confirm `GOOGLE_TOKEN_ENCRYPTION_KEY` is set before connecting Google Calendar; the app should fail safely instead of storing plaintext tokens.
+- Confirm optional email settings can be absent without blocking booking creation; dashboard notifications remain the pilot source of truth.
 - Rotate secrets if they are pasted into chat, logs, screenshots, or client-visible output.
 - Pilot deploy should use a dedicated Supabase project or a clearly isolated pilot tenant.
 

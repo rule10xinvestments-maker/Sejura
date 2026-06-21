@@ -66,6 +66,30 @@ export function PropertyForm({ property, action }: PropertyFormProps) {
         ) : null}
       </label>
 
+      <div className="block space-y-1">
+        <label className="label block" htmlFor="property-city">
+          Oras / localitate
+        </label>
+        <input
+          aria-describedby={
+            currentState.errors.city?.length ? "property-city-error" : undefined
+          }
+          aria-invalid={Boolean(currentState.errors.city?.length)}
+          className="field"
+          defaultValue={currentState.values.city ?? property?.city ?? ""}
+          id="property-city"
+          name="city"
+        />
+        <span className="block text-sm text-ink/65">
+          Apare pe pagina publica si il ajuta pe oaspete sa recunoasca proprietatea.
+        </span>
+        {currentState.errors.city?.[0] ? (
+          <span className="text-sm text-red-700" id="property-city-error">
+            {currentState.errors.city[0]}
+          </span>
+        ) : null}
+      </div>
+
       <div className="rounded-md border border-line bg-mist p-3">
         <p className="label">Link public rezervat</p>
         <p className="mt-1 text-sm text-ink/65">

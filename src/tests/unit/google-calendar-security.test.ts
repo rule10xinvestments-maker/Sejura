@@ -3,6 +3,7 @@ import {
   decryptGoogleToken,
   encryptGoogleToken
 } from "@/domain/google-calendar/crypto";
+import { ownerSafeGoogleCalendarMessage } from "@/domain/google-calendar/errors";
 import type { SafeGoogleCalendarConnection } from "@/domain/google-calendar/types";
 
 describe("Google Calendar security helpers", () => {
@@ -29,5 +30,14 @@ describe("Google Calendar security helpers", () => {
 
     expect(JSON.stringify(safeConnection)).not.toContain("token");
     expect(JSON.stringify(safeConnection)).not.toContain("encrypted");
+  });
+
+  it("uses owner-safe reconnect messaging without exposing token details", () => {
+    const message = ownerSafeGoogleCalendarMessage("GOOGLE_RECONNECT_REQUIRED");
+
+    expect(message).toContain("trebuie reconectat");
+    expect(message).not.toContain("token");
+    expect(message).not.toContain("refresh");
+    expect(message).not.toContain("access");
   });
 });

@@ -31,6 +31,20 @@ describe("parseBookingDetailsFromRomanianMessage", () => {
     });
   });
 
+  it("does not treat date day after pentru as guest count", () => {
+    expect(
+      parseBookingDetailsFromRomanianMessage(
+        "Aveti camera pentru 12 06 - 16 06?",
+        currentDate
+      )
+    ).toMatchObject({
+      start_date: "2026-06-12",
+      end_date: "2026-06-16",
+      guests_count: null,
+      missing_fields: ["guests_count"]
+    });
+  });
+
   it("parses Romanian month names", () => {
     expect(
       parseBookingDetailsFromRomanianMessage(
@@ -41,6 +55,20 @@ describe("parseBookingDetailsFromRomanianMessage", () => {
       start_date: "2026-06-12",
       end_date: "2026-06-16",
       guests_count: 4
+    });
+  });
+
+  it("parses Romanian date range with a shared written month", () => {
+    expect(
+      parseBookingDetailsFromRomanianMessage(
+        "Buna, aveti camera pentru 12-14 august, 2 persoane?",
+        currentDate
+      )
+    ).toMatchObject({
+      start_date: "2026-08-12",
+      end_date: "2026-08-14",
+      guests_count: 2,
+      missing_fields: []
     });
   });
 

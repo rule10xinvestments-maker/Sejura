@@ -3,20 +3,35 @@ import Link from "next/link";
 import type { ActivationStatus } from "@/domain/activation/service";
 
 type OnboardingFlowProps = {
-  hasProperty: boolean;
+  hasPropertyDetails: boolean;
   hasRoom: boolean;
   activation: ActivationStatus;
 };
 
 export function OnboardingFlow({
-  hasProperty,
+  hasPropertyDetails,
   hasRoom,
   activation
 }: OnboardingFlowProps) {
   const steps = [
-    { label: "Detalii proprietate", done: hasProperty, href: "/app/property" },
-    { label: "Prima camera", done: hasRoom, href: "/app/rooms" },
-    { label: "Verificare activare", done: activation.ready, href: "/app" }
+    {
+      label: "Detalii proprietate",
+      helper: "Nume, localitate, contact, ore si reguli.",
+      done: hasPropertyDetails,
+      href: "/app/property"
+    },
+    {
+      label: "Prima camera",
+      helper: "Camera activa cu capacitate si pret pe noapte.",
+      done: hasRoom,
+      href: "/app/rooms"
+    },
+    {
+      label: "Verificare activare",
+      helper: "Setarile pilot raman sigure pentru modul in asteptare.",
+      done: activation.ready,
+      href: "/app"
+    }
   ];
 
   return (
@@ -33,6 +48,7 @@ export function OnboardingFlow({
               <div>
                 <p className="text-sm text-ink/60">Pasul {index + 1}</p>
                 <h2 className="font-semibold">{step.label}</h2>
+                <p className="mt-1 text-sm text-ink/65">{step.helper}</p>
               </div>
               <span className="rounded-md bg-mist px-3 py-1 text-sm font-semibold">
                 {step.done ? "Gata" : "Lipseste"}

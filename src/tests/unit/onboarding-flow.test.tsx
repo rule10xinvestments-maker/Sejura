@@ -11,7 +11,7 @@ describe("OnboardingFlow", () => {
           ready: false,
           missingRequirements: ["Adauga detaliile proprietatii."]
         }}
-        hasProperty={false}
+        hasPropertyDetails={false}
         hasRoom={false}
       />
     );
@@ -20,5 +20,6 @@ describe("OnboardingFlow", () => {
       screen.getByRole("heading", { name: "Porneste cu baza corecta" })
     ).toBeVisible();
     expect(screen.getByText(/Adauga detaliile proprietatii\./)).toBeVisible();
+    expect(screen.getByText("Nume, localitate, contact, ore si reguli.")).toBeVisible();
   });
 });

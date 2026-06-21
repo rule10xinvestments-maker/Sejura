@@ -33,6 +33,7 @@ export default async function PropertyPage() {
         ok: false,
         errors: {
           name: fieldErrors.name ?? [],
+          city: fieldErrors.city ?? [],
           contact_phone: fieldErrors.contact_phone ?? [],
           contact_email: fieldErrors.contact_email ?? [],
           check_in_time: fieldErrors.check_in_time ?? [],

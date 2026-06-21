@@ -13,6 +13,7 @@ const propertyTimeSchema = z.preprocess(
 
 export const propertyFormSchema = z.object({
   name: z.string().trim().min(2, "Adauga numele proprietatii."),
+  city: z.string().trim().min(2, "Adauga orasul sau localitatea proprietatii."),
   contact_phone: z.string().trim().min(6, "Adauga un telefon de contact valid."),
   contact_email: z.string().trim().email("Adauga un email de contact valid."),
   check_in_time: propertyTimeSchema,

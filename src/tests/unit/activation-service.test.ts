@@ -15,6 +15,10 @@ const property = {
   check_in_time: "15:00",
   check_out_time: "11:00",
   rules: "Fara fumat in interior.",
+  city: "Brasov",
+  public_description: null,
+  public_contact_phone: null,
+  public_contact_email: null,
   created_at: "2026-01-01",
   updated_at: "2026-01-01"
 } as Property;
@@ -68,16 +72,29 @@ describe("getActivationStatus", () => {
     expect(status.missingRequirements).toEqual([]);
   });
 
-  it("blocks unsafe Sprint 1 settings", () => {
+  it("reports unsafe public booking settings", () => {
     const status = getActivationStatus({
       property,
-      settings: { ...settings, ai_enabled: true },
+      settings: { ...settings, ai_enabled: false, public_booking_enabled: true },
       rooms: [room]
     });
 
     expect(status.ready).toBe(false);
     expect(status.missingRequirements).toContain(
-      "AI trebuie sa ramana dezactivat in Sprint 1."
+      "Jonny trebuie activat inaintea cererilor publice de rezervare."
+    );
+  });
+
+  it("reports missing property city", () => {
+    const status = getActivationStatus({
+      property: { ...property, city: null },
+      settings,
+      rooms: [room]
+    });
+
+    expect(status.ready).toBe(false);
+    expect(status.missingRequirements).toContain(
+      "Adauga orasul sau localitatea proprietatii."
     );
   });
 });

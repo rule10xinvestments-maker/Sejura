@@ -322,6 +322,23 @@ describe("booking availability and transitions", () => {
     });
   });
 
+  it("confirming an already confirmed booking is idempotent", async () => {
+    const repo = requireCalendarRepository();
+    const port = syncedPort("google-event-idempotent");
+    const service = new BookingService(repo, port);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+    const confirmed = await service.confirmBooking(pending.id, { ownerId });
+    const eventCount = repo.bookingEvents.length;
+
+    const repeated = await service.confirmBooking(confirmed.id, { ownerId });
+
+    expect(repeated).toBe(confirmed);
+    expect(repeated.status).toBe("confirmed");
+    expect(repeated.google_calendar_event_id).toBe("google-event-idempotent");
+    expect(port.syncConfirmedBooking).toHaveBeenCalledOnce();
+    expect(repo.bookingEvents).toHaveLength(eventCount);
+  });
+
   it("rejects and cancels valid status transitions", async () => {
     const repo = repository();
     const service = new BookingService(repo);
@@ -335,6 +352,43 @@ describe("booking availability and transitions", () => {
 
     expect(rejected.status).toBe("rejected");
     expect(cancelled.status).toBe("cancelled");
+  });
+
+  it("cancelling keeps history and frees availability", async () => {
+    const repo = repository();
+    const service = new BookingService(repo);
+    const confirmed = await service.createManualBooking(validInput, { ownerId });
+    const cancelled = await service.cancelBooking(confirmed.id, { ownerId });
+    const availability = await new AvailabilityService(repo).checkAvailability(
+      {
+        propertyId,
+        roomId,
+        startDate: validInput.startDate,
+        endDate: validInput.endDate,
+        guestsCount: validInput.guestsCount
+      },
+      { ownerId }
+    );
+
+    expect(cancelled.status).toBe("cancelled");
+    expect(cancelled.deleted_at).toBeNull();
+    expect(repo.bookingEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          booking_id: confirmed.id,
+          event_type: "booking_created"
+        }),
+        expect.objectContaining({
+          booking_id: confirmed.id,
+          event_type: "booking_confirmed"
+        }),
+        expect.objectContaining({
+          booking_id: confirmed.id,
+          event_type: "booking_cancelled"
+        })
+      ])
+    );
+    expect(availability.available).toBe(true);
   });
 
   it("rejects invalid status transitions", async () => {
@@ -401,6 +455,9 @@ describe("booking availability and transitions", () => {
     });
     expect((await service.getBooking(pending.id, { ownerId })).status).toBe("pending");
     expect((await service.getBooking(pending.id, { ownerId })).calendar_sync_status).toBe("failed");
+    expect((await service.getBooking(pending.id, { ownerId })).calendar_sync_error_code).toBe(
+      "GOOGLE_EVENT_CREATE_FAILED"
+    );
   });
 
   it("allows confirmation with failed sync when calendar is optional", async () => {
@@ -420,6 +477,30 @@ describe("booking availability and transitions", () => {
 
     expect(confirmed.status).toBe("confirmed");
     expect(confirmed.calendar_sync_status).toBe("failed");
+    expect(confirmed.calendar_sync_error_code).toBe("GOOGLE_EVENT_CREATE_FAILED");
+  });
+
+  it("marks reconnect-required calendar failures visibly without confirming when required", async () => {
+    const repo = requireCalendarRepository();
+    const port: BookingCalendarSyncPort = {
+      syncConfirmedBooking: vi.fn(async () => {
+        throw new GoogleCalendarError(
+          "GOOGLE_RECONNECT_REQUIRED",
+          "Google Calendar trebuie reconectat."
+        );
+      }),
+      markCancelledBooking: vi.fn()
+    };
+    const service = new BookingService(repo, port);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+
+    await expect(service.confirmBooking(pending.id, { ownerId })).rejects.toMatchObject({
+      code: "NOT_AVAILABLE"
+    });
+    const afterFailure = await service.getBooking(pending.id, { ownerId });
+    expect(afterFailure.status).toBe("pending");
+    expect(afterFailure.calendar_sync_status).toBe("needs_reconnect");
+    expect(afterFailure.calendar_sync_error_code).toBe("GOOGLE_RECONNECT_REQUIRED");
   });
 
   it("marks Google Calendar event as cancelled when cancelling a synced booking", async () => {

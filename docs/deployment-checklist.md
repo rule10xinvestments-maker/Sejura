@@ -10,6 +10,8 @@ Deploy the current Sejura MVP safely for the first pilot owner.
 - Confirm `.env.local` or hosting secrets match `docs/env-matrix.md`.
 - Confirm the Supabase project is the intended pilot project.
 - Confirm the pilot owner knows the launch window and support contact.
+- Confirm public booking remains pending-only for the pilot property.
+- Confirm dashboard notifications are the source of truth if email provider vars are not configured.
 
 ## Required Environment
 - `NEXT_PUBLIC_SUPABASE_URL`
@@ -27,6 +29,13 @@ Optional for pilot:
 - `GOOGLE_CLIENT_SECRET`
 - `GOOGLE_CALENDAR_REDIRECT_URI`
 - `GOOGLE_TOKEN_ENCRYPTION_KEY`
+
+Calendar dry run requirement:
+- If Google Calendar connection or sync status is included in the dry run, configure all Google OAuth vars and `GOOGLE_TOKEN_ENCRYPTION_KEY` before the owner connects a calendar.
+
+Server-only guard:
+- Keep `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, and `EMAIL_PROVIDER_API_KEY` out of `NEXT_PUBLIC_` variables and browser-visible output.
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are the only required public env vars.
 
 ## Build Gate
 Run before deploy:
@@ -82,12 +91,16 @@ order by table_name, column_name;
 
 ## Post-Deploy Smoke
 - Visit `APP_BASE_URL`.
+- Create a test owner account if the pilot owner account does not already exist.
 - Sign in as pilot owner.
 - Open `/app`.
 - Open `/app/property`.
+- Create or verify the pilot property.
 - Open `/app/rooms`.
+- Create or verify at least one active room.
 - Open `/app/bookings`.
 - Open `/app/notifications`.
+- Open `/app/settings/google-calendar` and confirm calendar sync status is visible.
 - Visit `/p/[propertySlug]` signed out.
 - Complete the manual smoke test in `docs/manual-smoke-test.md`.
 

@@ -72,8 +72,8 @@ export default async function DashboardPage() {
         <h2 className="text-lg font-semibold">Urmatorii pasi</h2>
         {activation.ready ? (
           <p className="mt-2 text-sm text-ink/70">
-            Fundatia este completa. Functionalitatile AI si rezervari publice raman
-            dezactivate in Sprint 1.
+            Fundatia este completa pentru pilot. Cererile publice raman in
+            asteptare pana cand proprietarul le confirma.
           </p>
         ) : (
           <ul className="mt-3 space-y-2 text-sm text-ink/75">

@@ -79,6 +79,7 @@ Ask owner:
 - Confirm Jonny asks for one of the available rooms.
 - Start a new availability request after a draft.
 - Confirm old room/contact details are not reused.
+- Run the expanded public guest matrix in `docs/public-guest-conversation-dry-run.md`.
 
 ## Dry Run Pass Criteria
 - Owner can sign in.

@@ -167,6 +167,10 @@ export class BookingService {
   async confirmBooking(bookingId: string, authContext: AuthContext) {
     const booking = await this.getBooking(bookingId, authContext);
 
+    if (booking.status === "confirmed") {
+      return booking;
+    }
+
     if (booking.status !== "pending") {
       throw new BookingDomainError(
         "INVALID_STATUS_TRANSITION",

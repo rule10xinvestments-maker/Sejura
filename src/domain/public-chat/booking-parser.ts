@@ -87,6 +87,19 @@ function extractDatePair(message: string) {
     };
   }
 
+  const sharedNamedMonth = message.match(
+    /(?:de pe|din|intre|Ã®ntre)?\s*(\d{1,2})\s*(?:-|â€“|â€”|pana(?:\s+pe)?|pÃ¢nÄƒ(?:\s+pe)?|pina(?:\s+pe)?)\s*(\d{1,2})\s+(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)/i
+  );
+  if (sharedNamedMonth) {
+    const month = monthNames[sharedNamedMonth[3].toLowerCase()];
+    return {
+      startDay: Number(sharedNamedMonth[1]),
+      startMonth: month,
+      endDay: Number(sharedNamedMonth[2]),
+      endMonth: month
+    };
+  }
+
   return null;
 }
 
@@ -102,7 +115,9 @@ function extractGuests(message: string) {
   const suntem = message.match(/\bsuntem\s+(\d{1,2})\b/i);
   if (suntem) return Number(suntem[1]);
 
-  const pentru = message.match(/\bpentru\s+(\d{1,2})\b/i);
+  const pentru = message.match(
+    /\bpentru\s+(\d{1,2})(?!\s*(?:\d|[./-]|ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie))\b/i
+  );
   if (pentru) return Number(pentru[1]);
 
   return null;

@@ -15,6 +15,7 @@ export const PROPERTY_FORM_INITIAL_STATE: PropertyFormState = {
 export function getPropertyFormValues(formData: FormData) {
   return {
     name: String(formData.get("name") ?? ""),
+    city: String(formData.get("city") ?? ""),
     contact_phone: String(formData.get("contact_phone") ?? ""),
     contact_email: String(formData.get("contact_email") ?? ""),
     check_in_time: String(formData.get("check_in_time") ?? ""),

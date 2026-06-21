@@ -7,6 +7,7 @@ describe("property schema", () => {
   it("validates property setup without requiring owner-entered slug", () => {
     const parsed = propertyFormSchema.parse({
       name: "Cabana Brad",
+      city: "Brasov",
       contact_phone: "0712345678",
       contact_email: "gazda@example.com",
       check_in_time: "15:00",
@@ -16,6 +17,7 @@ describe("property schema", () => {
 
     expect(parsed).toEqual({
       name: "Cabana Brad",
+      city: "Brasov",
       contact_phone: "0712345678",
       contact_email: "gazda@example.com",
       check_in_time: "15:00",
@@ -27,6 +29,7 @@ describe("property schema", () => {
   it("normalizes localized time values before validation", () => {
     const parsed = propertyFormSchema.parse({
       name: "Cabana Brad",
+      city: "Brasov",
       contact_phone: "0712345678",
       contact_email: "gazda@example.com",
       check_in_time: "03:00 PM",
@@ -42,6 +45,7 @@ describe("property schema", () => {
   it("returns friendly time validation errors", () => {
     const parsed = propertyFormSchema.safeParse({
       name: "Cabana Brad",
+      city: "Brasov",
       contact_phone: "0712345678",
       contact_email: "gazda@example.com",
       check_in_time: "25:99",

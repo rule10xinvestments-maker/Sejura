@@ -19,6 +19,7 @@ Prepare Sejura MVP for first pilot owner use with the existing pending-booking w
 - At least one active room exists with max guests and price.
 - `OPENAI_API_KEY` is configured for Jonny.
 - `SUPABASE_SERVICE_ROLE_KEY` is configured server-side.
+- Google OAuth vars and `GOOGLE_TOKEN_ENCRYPTION_KEY` are configured if calendar status/connection is included in the dry run.
 
 ## Environment Checklist
 - `NEXT_PUBLIC_SUPABASE_URL`
@@ -31,19 +32,29 @@ Prepare Sejura MVP for first pilot owner use with the existing pending-booking w
   - `EMAIL_PROVIDER_API_KEY`
   - `EMAIL_FROM_ADDRESS`
   - `EMAIL_FROM_NAME`
+- Optional Google Calendar settings configured before calendar connection is attempted:
+  - `GOOGLE_CLIENT_ID`
+  - `GOOGLE_CLIENT_SECRET`
+  - `GOOGLE_CALENDAR_REDIRECT_URI`
+  - `GOOGLE_TOKEN_ENCRYPTION_KEY`
 
 ## Owner Smoke
+- Sign up as pilot owner if no account exists.
 - Sign in as pilot owner.
 - Open `/app`.
 - Confirm dashboard renders.
 - Open `/app/property`.
+- Create or update the pilot property if needed.
 - Confirm public page details are correct.
 - Open `/app/rooms`.
+- Create or update at least one active room if needed.
 - Confirm room inventory is correct.
 - Open `/app/bookings`.
 - Confirm no cross-owner data appears.
 - Open `/app/notifications`.
 - Confirm page renders even if email provider is not configured.
+- Open `/app/settings/google-calendar`.
+- Confirm calendar sync connection/status is visible.
 
 ## Public Guest Smoke
 - Open `/p/[propertySlug]` signed out or in a clean browser session.
@@ -62,6 +73,7 @@ Prepare Sejura MVP for first pilot owner use with the existing pending-booking w
 - Confirm `source = ai_chat` in database verification when needed.
 - Confirm no Google Calendar event exists while pending.
 - Confirm owner notification exists for pending booking when notifications are enabled.
+- Confirm calendar sync status is visible for the pending booking.
 - Confirm owner can confirm, reject, or cancel from the protected owner flow.
 
 ## Database Verification

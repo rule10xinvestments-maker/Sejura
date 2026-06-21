@@ -19,6 +19,12 @@ describe("PropertyForm", () => {
     ).toBeVisible();
     expect(screen.queryByLabelText("Slug public rezervat")).not.toBeInTheDocument();
     expect(screen.queryByText(/\/p\//)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Oras / localitate")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Apare pe pagina publica si il ajuta pe oaspete sa recunoasca proprietatea."
+      )
+    ).toBeVisible();
     expect(screen.getByLabelText("Check-in")).toHaveValue("15:00");
     expect(screen.getByLabelText("Check-out")).toHaveValue("11:00");
     expect(
@@ -44,6 +50,7 @@ describe("PropertyForm", () => {
         ok: false,
         errors: {
           name: ["Adauga numele proprietatii."],
+          city: ["Adauga orasul sau localitatea proprietatii."],
           check_in_time: ["Foloseste ora in format HH:mm, de exemplu 15:00."]
         },
         message: "Verifica detaliile proprietatii si incearca din nou.",
@@ -57,6 +64,9 @@ describe("PropertyForm", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Adauga numele proprietatii.")).toBeVisible();
+      expect(
+        screen.getByText("Adauga orasul sau localitatea proprietatii.")
+      ).toBeVisible();
       expect(
         screen.getByText("Foloseste ora in format HH:mm, de exemplu 15:00.")
       ).toBeVisible();

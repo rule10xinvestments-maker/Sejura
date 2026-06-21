@@ -16,7 +16,7 @@ export default async function SettingsPage() {
     <div className="space-y-4">
       <div>
         <p className="text-sm font-semibold text-clay">Setari</p>
-        <h1 className="text-2xl font-bold">Reguli sigure Sprint 1</h1>
+        <h1 className="text-2xl font-bold">Reguli sigure pilot</h1>
       </div>
       <SettingsPanel settings={settings} />
     </div>

@@ -14,11 +14,20 @@ export default async function OnboardingPage() {
   const settings = property
     ? await getPropertySettings(supabase, ownerId, property.id)
     : null;
+  const hasPropertyDetails = Boolean(
+    property?.name &&
+      property.city &&
+      property.contact_phone &&
+      property.contact_email &&
+      property.check_in_time &&
+      property.check_out_time &&
+      property.rules
+  );
 
   return (
     <OnboardingFlow
       activation={getActivationStatus({ property, settings, rooms })}
-      hasProperty={Boolean(property)}
+      hasPropertyDetails={hasPropertyDetails}
       hasRoom={rooms.some((room) => room.status === "active")}
     />
   );

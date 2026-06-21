@@ -35,8 +35,8 @@ export function SettingsPanel({
         ))}
       </div>
       <p className="mt-4 text-sm text-ink/65">
-        Aceste optiuni raman blocate in Sprint 1. Activarea AI, rezervarile publice
-        si confirmarile automate nu sunt construite inca.
+        Pentru pilot, Jonny si cererile publice se folosesc doar in modul in
+        asteptare. Confirmarea automata ramane dezactivata.
       </p>
       <Link
         className="button-secondary mt-4 inline-flex"
