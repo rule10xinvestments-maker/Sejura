@@ -395,6 +395,32 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function uniqueValues(values: string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function roomNameAliases(roomName: string) {
+  const withoutCapacitySuffix = roomName
+    .replace(/\s+[—–-]\s*\d+\s*(?:persoane|oaspeti|oameni)\b.*$/i, "")
+    .trim();
+  const beforeSeparator = roomName.split(/\s+[—–-]\s+/)[0]?.trim() ?? roomName;
+  return uniqueValues([roomName, withoutCapacitySuffix, beforeSeparator]);
+}
+
+function normalizeForLooseMatch(value: string) {
+  return normalizeText(value)
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizedMessageContainsRoom(message: string, roomAlias: string) {
+  const normalizedMessage = ` ${normalizeForLooseMatch(message)} `;
+  const normalizedAlias = normalizeForLooseMatch(roomAlias);
+  if (!normalizedAlias) return false;
+  return normalizedMessage.includes(` ${normalizedAlias} `);
+}
+
 function getBookingDraft(conversation: Conversation): BookingDraft | null {
   const metadata = isRecord(conversation.metadata) ? conversation.metadata : {};
   const draft = metadata.booking_draft;
@@ -426,12 +452,17 @@ function metadataWithoutBookingDraft(conversation: Conversation) {
 }
 
 function findSelectedRoom(draft: BookingDraft, message: string) {
-  const normalizedMessage = normalizeText(message);
-  return (
-    draft.available_rooms.find((room) =>
-      normalizedMessage.includes(normalizeText(room.name))
-    ) ?? null
-  );
+  for (const room of draft.available_rooms) {
+    if (
+      roomNameAliases(room.name).some((alias) =>
+        normalizedMessageContainsRoom(message, alias)
+      )
+    ) {
+      return room;
+    }
+  }
+
+  return null;
 }
 
 function findDraftRoomById(draft: BookingDraft, roomId: string | null) {
@@ -446,7 +477,7 @@ function isExplicitConfirmation(message: string) {
 }
 
 function looksLikeRoomSelectionAttempt(message: string) {
-  return /\b(la|aleg|alege|camera|unitatea|etaj|parter)\b/i.test(
+  return /\b(la|aleg|alege|aleasa|vreau|doresc|as vrea|aș vrea|camera|apartament|unitatea|etaj|parter)\b/i.test(
     normalizeText(message)
   );
 }
@@ -461,7 +492,9 @@ function extractGuestContact(message: string, selectedRoomName?: string | null) 
 
   let nameText = message;
   if (selectedRoomName) {
-    nameText = nameText.replace(new RegExp(escapeRegExp(selectedRoomName), "i"), " ");
+    for (const alias of roomNameAliases(selectedRoomName)) {
+      nameText = nameText.replace(new RegExp(escapeRegExp(alias), "i"), " ");
+    }
   }
   const explicitName = message.match(
     /(?:numele\s+meu\s+este|ma\s+numesc|mă\s+numesc|sunt)\s+([a-zA-ZăâîșțĂÂÎȘȚ -]{3,}?)(?:,|\.|\s+telefon|\s+tel|\s+\+?0?7\d{8}|$)/i
@@ -473,10 +506,12 @@ function extractGuestContact(message: string, selectedRoomName?: string | null) 
   if (rawPhone && rawPhone !== phone) nameText = nameText.replace(rawPhone, " ");
   if (email) nameText = nameText.replace(email, " ");
   if (selectedRoomName) {
-    nameText = nameText.replace(new RegExp(escapeRegExp(selectedRoomName), "i"), " ");
+    for (const alias of roomNameAliases(selectedRoomName)) {
+      nameText = nameText.replace(new RegExp(escapeRegExp(alias), "i"), " ");
+    }
   }
   nameText = nameText
-    .replace(/\b(la|aleg|camera|unitatea|numele|meu|este|telefon|tel|confirm|confirma|trimite|cererea|da)\b/gi, " ")
+    .replace(/\b(la|aleg|alege|vreau|doresc|as|vrea|camera|apartament|unitatea|numele|meu|este|telefon|tel|confirm|confirma|trimite|cererea|da)\b/gi, " ")
     .replace(/[,\.;:]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -993,6 +1028,60 @@ export class AiReceptionistService {
     }
   }
 
+  private async submitPendingBookingFromDraft(
+    conversation: Conversation,
+    draft: BookingDraft,
+    language: string
+  ) {
+    const availability = asAvailabilityToolOutput(
+      await this.executeToolCall(
+        "check_availability",
+        {
+          property_id: conversation.property_id,
+          conversation_id: conversation.id,
+          start_date: draft.start_date,
+          end_date: draft.end_date,
+          guests_count: draft.guests_count,
+          preferred_room_id: draft.selected_room_id
+        },
+        conversation
+      )
+    );
+    if (availability.available_rooms.length === 0) {
+      return language === "en"
+        ? "I rechecked availability and that room is no longer available. I can check another period or room."
+        : "Am reverificat disponibilitatea si camera nu mai este disponibila. Pot verifica alta perioada sau alta camera.";
+    }
+
+    const readyDraft = {
+      ...draft,
+      total_estimated_price: draft.total_estimated_price ?? recomputeEstimatedTotal(draft)
+    };
+    const booking = await this.executeToolCall(
+      "create_pending_booking",
+      {
+        property_id: conversation.property_id,
+        conversation_id: conversation.id,
+        room_id: readyDraft.selected_room_id,
+        guest_name: readyDraft.guest_name,
+        guest_phone: readyDraft.guest_phone,
+        guest_email: readyDraft.guest_email,
+        start_date: readyDraft.start_date,
+        end_date: readyDraft.end_date,
+        guests_count: readyDraft.guests_count,
+        total_estimated_price: readyDraft.total_estimated_price
+      },
+      conversation
+    );
+    await this.clearBookingDraft(conversation);
+    const bookingId = isRecord(booking) && typeof booking.booking_id === "string"
+      ? booking.booking_id
+      : null;
+    return language === "en"
+      ? "I sent the pending booking request to the owner. It is not confirmed yet."
+      : `Am trimis cererea către proprietar${bookingId ? ` (#${bookingId})` : ""}. Rezervarea este în așteptare și nu este confirmată încă.`;
+  }
+
   private async continueBookingDraft(
     conversation: Conversation,
     draft: BookingDraft,
@@ -1000,53 +1089,7 @@ export class AiReceptionistService {
     language: string
   ) {
     if (draft.awaiting === "explicit_confirmation" && isExplicitConfirmation(message)) {
-      const availability = asAvailabilityToolOutput(
-        await this.executeToolCall(
-          "check_availability",
-          {
-            property_id: conversation.property_id,
-            conversation_id: conversation.id,
-            start_date: draft.start_date,
-            end_date: draft.end_date,
-            guests_count: draft.guests_count,
-            preferred_room_id: draft.selected_room_id
-          },
-          conversation
-        )
-      );
-      if (availability.available_rooms.length === 0) {
-        return language === "en"
-          ? "I rechecked availability and that room is no longer available. I can check another period or room."
-          : "Am reverificat disponibilitatea si camera nu mai este disponibila. Pot verifica alta perioada sau alta camera.";
-      }
-
-      const readyDraft = {
-        ...draft,
-        total_estimated_price: draft.total_estimated_price ?? recomputeEstimatedTotal(draft)
-      };
-      const booking = await this.executeToolCall(
-        "create_pending_booking",
-        {
-          property_id: conversation.property_id,
-          conversation_id: conversation.id,
-          room_id: readyDraft.selected_room_id,
-          guest_name: readyDraft.guest_name,
-          guest_phone: readyDraft.guest_phone,
-          guest_email: readyDraft.guest_email,
-          start_date: readyDraft.start_date,
-          end_date: readyDraft.end_date,
-          guests_count: readyDraft.guests_count,
-          total_estimated_price: readyDraft.total_estimated_price
-        },
-        conversation
-      );
-      await this.clearBookingDraft(conversation);
-      const bookingId = isRecord(booking) && typeof booking.booking_id === "string"
-        ? booking.booking_id
-        : null;
-      return language === "en"
-        ? "I sent the pending booking request to the owner. It is not confirmed yet."
-        : `Am trimis cererea către proprietar${bookingId ? ` (#${bookingId})` : ""}. Rezervarea este în așteptare și nu este confirmată încă.`;
+      return this.submitPendingBookingFromDraft(conversation, draft, language);
     }
 
     const selectedRoom = findSelectedRoom(draft, message);
@@ -1077,18 +1120,9 @@ export class AiReceptionistService {
     };
 
     if (nextDraft.selected_room_id && nextDraft.guest_name && (nextDraft.guest_phone || nextDraft.guest_email)) {
-      nextDraft.awaiting = "explicit_confirmation";
+      nextDraft.awaiting = "none";
       await this.saveBookingDraft(conversation, nextDraft);
-      return [
-        "Am toate detaliile pentru cererea in asteptare:",
-        `Camera: ${nextDraft.selected_room_name}`,
-        `Perioada: ${nextDraft.start_date} - ${nextDraft.end_date}`,
-        `Oaspeti: ${nextDraft.guests_count}`,
-        `Nume: ${nextDraft.guest_name}`,
-        `Contact: ${nextDraft.guest_phone ?? nextDraft.guest_email}`,
-        `Total estimat: ${nextDraft.total_estimated_price ?? "-"} RON`,
-        "Confirmi că trimit cererea către proprietar?"
-      ].join("\n");
+      return this.submitPendingBookingFromDraft(conversation, nextDraft, language);
     }
 
     if (selectedRoom || contact.guestName || contact.phone || contact.email) {

@@ -300,6 +300,24 @@ function createPilotAvailabilitySupabase(options?: {
   });
 }
 
+function createFamilyApartmentSupabase() {
+  return createAiBookingFlowSupabase({
+    rooms: [
+      {
+        id: "room-family",
+        owner_id: "owner-1",
+        property_id: "property-1",
+        name: "Apartament Familie — 4 persoane",
+        max_guests: 4,
+        base_price_per_night: 450,
+        status: "active",
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z"
+      }
+    ]
+  });
+}
+
 function createPublicChatSupabase(options?: {
   publicEnabled?: boolean;
   publicBookingEnabled?: boolean;
@@ -961,7 +979,7 @@ describe("public chat runtime safety", () => {
     expect(fake.rows.bookings).toHaveLength(0);
   });
 
-  it("continues from availability, extracts room and contact, and asks confirmation", async () => {
+  it("continues from availability, extracts room and contact, and creates a pending booking", async () => {
     const fake = createAiBookingFlowSupabase();
     process.env.OPENAI_API_KEY = "test-key";
     const service = new AiReceptionistService(fake.client);
@@ -979,19 +997,17 @@ describe("public chat runtime safety", () => {
     );
     delete process.env.OPENAI_API_KEY;
 
-    expect(result.message).toContain("Confirmi că trimit cererea către proprietar?");
+    expect(result.message).toContain("Rezervarea este în așteptare");
     expect(result.message).not.toContain("Pot verifica disponibilitatea dupa");
-    expect(fake.rows.conversations[0].metadata).toMatchObject({
-      booking_draft: {
-        selected_room_id: "room-1",
-        selected_room_name: "B parter",
-        guest_name: "Mihai Evreu",
-        guest_phone: "0745855634",
-        total_estimated_price: 1380,
-        awaiting: "explicit_confirmation"
-      }
+    expect(fake.rows.bookings).toHaveLength(1);
+    expect(fake.rows.bookings[0]).toMatchObject({
+      status: "pending",
+      room_id: "room-1",
+      guest_name: "Mihai Evreu",
+      guest_phone: "0745855634",
+      total_estimated_price: 1380
     });
-    expect(fake.rows.bookings).toHaveLength(0);
+    expect(fake.rows.conversations[0].metadata).not.toHaveProperty("booking_draft");
   });
 
   it("lets the guest change selected room before explicit confirmation", async () => {
@@ -1038,17 +1054,14 @@ describe("public chat runtime safety", () => {
     );
     delete process.env.OPENAI_API_KEY;
 
-    expect(result.message).toContain("Camera: B parter");
-    expect(result.message).toContain("Confirmi");
-    expect(fake.rows.conversations[0].metadata).toMatchObject({
-      booking_draft: {
-        selected_room_id: "room-2",
-        selected_room_name: "B parter",
-        total_estimated_price: 1380,
-        awaiting: "explicit_confirmation"
-      }
+    expect(result.message).toContain("Rezervarea este în așteptare");
+    expect(fake.rows.bookings).toHaveLength(1);
+    expect(fake.rows.bookings[0]).toMatchObject({
+      room_id: "room-2",
+      guest_name: "Mihai Evreu",
+      guest_phone: "0745855634",
+      total_estimated_price: 1380
     });
-    expect(fake.rows.bookings).toHaveLength(0);
   });
 
   it("keeps the draft waiting when guest gives name but no phone or email", async () => {
@@ -1081,7 +1094,7 @@ describe("public chat runtime safety", () => {
     expect(fake.rows.bookings).toHaveLength(0);
   });
 
-  it("creates a pending AI booking after explicit confirmation", async () => {
+  it("creates a pending AI booking when room and contact are supplied after availability", async () => {
     const fake = createAiBookingFlowSupabase();
     process.env.OPENAI_API_KEY = "test-key";
     const service = new AiReceptionistService(fake.client);
@@ -1090,14 +1103,9 @@ describe("public chat runtime safety", () => {
       "vreau o cazare de pe 12 06 pana pe 16 06 4 persoane",
       { publicSessionId: "session-1" }
     );
-    await service.handlePublicMessage(
-      "conversation-1",
-      "Aleg B parter. Numele meu este Mihai Evreu, telefon 0745855634.",
-      { publicSessionId: "session-1" }
-    );
     const result = await service.handlePublicMessage(
       "conversation-1",
-      "Da, confirm, trimite cererea",
+      "Aleg B parter. Numele meu este Mihai Evreu, telefon 0745855634.",
       { publicSessionId: "session-1" }
     );
     delete process.env.OPENAI_API_KEY;
@@ -1151,24 +1159,31 @@ describe("public chat runtime safety", () => {
     const fake = createAiBookingFlowSupabase({ notificationInsertFails: true });
     process.env.OPENAI_API_KEY = "test-key";
     const service = new AiReceptionistService(fake.client);
-    await service.handlePublicMessage(
-      "conversation-1",
-      "vreau o cazare de pe 12 06 pana pe 16 06 4 persoane",
-      { publicSessionId: "session-1" }
-    );
-    await service.handlePublicMessage(
-      "conversation-1",
-      "Aleg B parter. Numele meu este Mihai Evreu, telefon 0745855634.",
-      { publicSessionId: "session-1" }
-    );
-    const metadata = fake.rows.conversations[0].metadata as {
+    fake.rows.conversations[0].metadata = {
       booking_draft: {
-        total_estimated_price: number | null;
-        available_rooms: Array<{ total_estimated_price: number | null }>;
-      };
+        start_date: "2026-06-12",
+        end_date: "2026-06-16",
+        guests_count: 4,
+        available_rooms: [
+          {
+            room_id: "room-1",
+            name: "B parter",
+            max_guests: 4,
+            price_per_night: 345,
+            nights_count: 4,
+            total_estimated_price: null,
+            currency: "RON"
+          }
+        ],
+        selected_room_id: "room-1",
+        selected_room_name: "B parter",
+        guest_name: "Mihai Evreu",
+        guest_phone: "0745855634",
+        guest_email: null,
+        total_estimated_price: null,
+        awaiting: "explicit_confirmation"
+      }
     };
-    metadata.booking_draft.total_estimated_price = null;
-    metadata.booking_draft.available_rooms[0].total_estimated_price = null;
 
     const result = await service.handlePublicMessage(
       "conversation-1",
@@ -1300,11 +1315,6 @@ describe("public chat runtime safety", () => {
       "Aleg B parter. Numele meu este Mihai Evreu, telefon 0745855634.",
       { publicSessionId: "session-1" }
     );
-    await service.handlePublicMessage(
-      "conversation-1",
-      "Da, confirm, trimite cererea",
-      { publicSessionId: "session-1" }
-    );
     delete process.env.OPENAI_API_KEY;
 
     expect(fake.rows.bookings).toHaveLength(1);
@@ -1324,11 +1334,6 @@ describe("public chat runtime safety", () => {
     await service.handlePublicMessage(
       "conversation-1",
       "Aleg B parter. Numele meu este Mihai Evreu, telefon 0745855634.",
-      { publicSessionId: "session-1" }
-    );
-    await service.handlePublicMessage(
-      "conversation-1",
-      "Da, confirm, trimite cererea",
       { publicSessionId: "session-1" }
     );
     const result = await service.handlePublicMessage(
@@ -1356,11 +1361,6 @@ describe("public chat runtime safety", () => {
     await service.handlePublicMessage(
       "conversation-1",
       "Aleg B parter. Numele meu este Mihai Evreu, telefon 0745855634.",
-      { publicSessionId: "session-1" }
-    );
-    await service.handlePublicMessage(
-      "conversation-1",
-      "Da, confirm, trimite cererea",
       { publicSessionId: "session-1" }
     );
     const result = await service.handlePublicMessage(
@@ -1394,25 +1394,15 @@ describe("public chat runtime safety", () => {
       "Aleg B parter. Numele meu este Mihai Evreu, telefon 0745855634.",
       { publicSessionId: "session-1" }
     );
-    await service.handlePublicMessage(
-      "conversation-1",
-      "Da, confirm, trimite cererea",
-      { publicSessionId: "session-1" }
-    );
 
     const nextAvailability = await service.handlePublicMessage(
       "conversation-1",
       "Vreau alta cazare de pe 12 08 pana pe 14 08 pentru 2 persoane",
       { publicSessionId: "session-1" }
     );
-    await service.handlePublicMessage(
-      "conversation-1",
-      "Aleg B parter. Numele meu este Ana Test, telefon 0745000000.",
-      { publicSessionId: "session-1" }
-    );
     const secondBooking = await service.handlePublicMessage(
       "conversation-1",
-      "Da, confirm, trimite cererea",
+      "Aleg B parter. Numele meu este Ana Test, telefon 0745000000.",
       { publicSessionId: "session-1" }
     );
     delete process.env.OPENAI_API_KEY;
@@ -1429,6 +1419,87 @@ describe("public chat runtime safety", () => {
       end_date: "2026-08-14"
     });
     expect(fake.rows.owner_notifications).toHaveLength(2);
+  });
+
+  it.each([
+    "Vreau Apartament Familie. Mă numesc Andrei Popescu, telefon 0700000000.",
+    "vreau apartament familie. ma numesc Andrei Popescu, telefon 0700000000.",
+    "Aleg Apartament Familie, Andrei Popescu, 0700000000"
+  ])(
+    "recognizes a valid family apartment selection with contact in the same message: %s",
+    async (selectionMessage) => {
+      const fake = createFamilyApartmentSupabase();
+      delete process.env.OPENAI_API_KEY;
+      const service = new AiReceptionistService(fake.client);
+      const availability = await service.handlePublicMessage(
+        "conversation-1",
+        "vreau o cazare de pe 12 06 pana pe 16 06 4 persoane",
+        { publicSessionId: "session-1" }
+      );
+      const result = await service.handlePublicMessage(
+        "conversation-1",
+        selectionMessage,
+        { publicSessionId: "session-1" }
+      );
+
+      expect(availability.message).toContain("Apartament Familie");
+      expect(result.message).toContain("Rezervarea este în așteptare");
+      expect(result.message).not.toContain("alegi una dintre camerele");
+      expect(fake.rows.bookings).toHaveLength(1);
+      expect(fake.rows.bookings[0]).toMatchObject({
+        status: "pending",
+        room_id: "room-family",
+        guest_name: "Andrei Popescu",
+        guest_phone: "0700000000",
+        total_estimated_price: 1800
+      });
+    }
+  );
+
+  it("keeps a valid selected room when guest contact details are missing", async () => {
+    const fake = createFamilyApartmentSupabase();
+    delete process.env.OPENAI_API_KEY;
+    const service = new AiReceptionistService(fake.client);
+    await service.handlePublicMessage(
+      "conversation-1",
+      "vreau o cazare de pe 12 06 pana pe 16 06 4 persoane",
+      { publicSessionId: "session-1" }
+    );
+    const result = await service.handlePublicMessage(
+      "conversation-1",
+      "Vreau Apartament Familie",
+      { publicSessionId: "session-1" }
+    );
+
+    expect(result.message).toContain("numele si un telefon sau email");
+    expect(result.message).not.toContain("alegi una dintre camerele");
+    expect(fake.rows.conversations[0].metadata).toMatchObject({
+      booking_draft: {
+        selected_room_id: "room-family",
+        selected_room_name: "Apartament Familie — 4 persoane",
+        awaiting: "guest_contact"
+      }
+    });
+    expect(fake.rows.bookings).toHaveLength(0);
+  });
+
+  it("rejects unavailable room selection after family apartment availability", async () => {
+    const fake = createFamilyApartmentSupabase();
+    delete process.env.OPENAI_API_KEY;
+    const service = new AiReceptionistService(fake.client);
+    await service.handlePublicMessage(
+      "conversation-1",
+      "vreau o cazare de pe 12 06 pana pe 16 06 4 persoane",
+      { publicSessionId: "session-1" }
+    );
+    const result = await service.handlePublicMessage(
+      "conversation-1",
+      "Vreau Camera Dublă 2",
+      { publicSessionId: "session-1" }
+    );
+
+    expect(result.message).toContain("alegi una dintre camerele gasite disponibile");
+    expect(fake.rows.bookings).toHaveLength(0);
   });
 
   it("rejects room choices outside the last availability result", async () => {
