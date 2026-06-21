@@ -1,10 +1,19 @@
+import React from "react";
 import Link from "next/link";
 import type { PropertySettings } from "@/domain/settings/types";
 
 export function SettingsPanel({
-  settings
+  autoConfirmationAction,
+  propertyId,
+  publicBookingsAction,
+  settings,
+  toggleAiAction
 }: {
+  autoConfirmationAction: (formData: FormData) => void;
+  propertyId: string | null;
+  publicBookingsAction: (formData: FormData) => void;
   settings: PropertySettings | null;
+  toggleAiAction: (formData: FormData) => void;
 }) {
   if (!settings) {
     return (
@@ -16,25 +25,80 @@ export function SettingsPanel({
     );
   }
 
-  const rows = [
-    ["AI", settings.ai_enabled],
-    ["Rezervari publice", settings.public_booking_enabled],
-    ["Confirmare automata", settings.allow_auto_confirmation]
-  ];
-
   return (
     <section className="panel">
       <div className="space-y-3">
-        {rows.map(([label, enabled]) => (
-          <div className="flex items-center justify-between gap-3" key={String(label)}>
-            <span className="font-medium">{label}</span>
-            <span className="rounded-md bg-mist px-3 py-1 text-sm font-semibold">
-              {enabled ? "Activ" : "Dezactivat"}
-            </span>
+        <div className="flex flex-col gap-2 border-b border-line pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">AI</p>
+            <p className="text-sm text-ink/65">
+              Activeaza sau dezactiveaza asistentul Jonny pentru pagina publica.
+            </p>
           </div>
-        ))}
+          <form action={toggleAiAction}>
+            <input name="propertyId" type="hidden" value={propertyId ?? ""} />
+            <input
+              name="enabled"
+              type="hidden"
+              value={settings.ai_enabled ? "false" : "true"}
+            />
+            <button
+              aria-pressed={settings.ai_enabled}
+              className={settings.ai_enabled ? "button-primary" : "button-secondary"}
+              type="submit"
+            >
+              {settings.ai_enabled ? "Activat" : "Dezactivat"}
+            </button>
+          </form>
+        </div>
+
+        <div className="flex flex-col gap-2 border-b border-line pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">Rezervari publice</p>
+            <p className="text-sm text-ink/65">
+              Controleaza disponibilitatea paginii publice de rezervari.
+            </p>
+          </div>
+          <form action={publicBookingsAction}>
+            <input name="propertyId" type="hidden" value={propertyId ?? ""} />
+            <input
+              name="enabled"
+              type="hidden"
+              value={settings.public_booking_enabled ? "false" : "true"}
+            />
+            <button
+              aria-pressed={settings.public_booking_enabled}
+              className={
+                settings.public_booking_enabled ? "button-primary" : "button-secondary"
+              }
+              type="submit"
+            >
+              {settings.public_booking_enabled ? "Activat" : "Dezactivat"}
+            </button>
+          </form>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">Confirmare automata</p>
+            <p className="text-sm text-ink/65">
+              Pentru pilot, Jonny trimite doar cereri in asteptare catre proprietar.
+            </p>
+          </div>
+          <form action={autoConfirmationAction}>
+            <input name="propertyId" type="hidden" value={propertyId ?? ""} />
+            <button
+              aria-describedby="auto-confirmation-pilot-note"
+              aria-pressed={false}
+              className="button-secondary opacity-75"
+              type="submit"
+            >
+              Dezactivata pentru pilot
+            </button>
+          </form>
+        </div>
       </div>
-      <p className="mt-4 text-sm text-ink/65">
+      <p className="mt-4 text-sm text-ink/65" id="auto-confirmation-pilot-note">
         Pentru pilot, Jonny si cererile publice se folosesc doar in modul in
         asteptare. Confirmarea automata ramane dezactivata.
       </p>

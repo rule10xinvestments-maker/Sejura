@@ -302,6 +302,8 @@ function createPilotAvailabilitySupabase(options?: {
 
 function createPublicChatSupabase(options?: {
   publicEnabled?: boolean;
+  publicBookingEnabled?: boolean;
+  aiEnabled?: boolean;
   setupReady?: boolean;
   insertFails?: boolean;
 }) {
@@ -311,6 +313,12 @@ function createPublicChatSupabase(options?: {
   }
   if (options?.setupReady === false) {
     context.property.status = "setup_incomplete";
+  }
+  if (options?.publicBookingEnabled === false && context.settings) {
+    context.settings.public_booking_enabled = false;
+  }
+  if (options?.aiEnabled === false && context.settings) {
+    context.settings.ai_enabled = false;
   }
 
   const conversations: Row[] = [];
@@ -448,6 +456,25 @@ describe("public chat runtime safety", () => {
         createPublicChatSupabase({ setupReady: false }).client
       ).startConversation("pensiunea-test")
     ).rejects.toMatchObject({ code: "SETUP_INCOMPLETE" });
+  });
+
+  it("keeps public page flow unavailable when public bookings are disabled", async () => {
+    await expect(
+      new PublicConversationService(
+        createPublicChatSupabase({ publicBookingEnabled: false }).client
+      ).startConversation("pensiunea-test")
+    ).rejects.toMatchObject({ code: "SETUP_INCOMPLETE" });
+  });
+
+  it("allows public page flow when public page, AI, and public bookings are enabled", async () => {
+    const fake = createPublicChatSupabase();
+    const result = await new PublicConversationService(fake.client).startConversation(
+      "pensiunea-test"
+    );
+
+    expect(result.conversation.id).toBe("conversations-1");
+    expect(result.context.settings?.ai_enabled).toBe(true);
+    expect(result.context.settings?.public_booking_enabled).toBe(true);
   });
 
   it("maps conversation insert schema failures to a guest-safe internal error", async () => {

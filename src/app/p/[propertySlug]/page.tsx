@@ -43,6 +43,16 @@ export default async function PublicPropertyPage({
     .eq("status", "active")
     .order("created_at", { ascending: true });
 
+  if (!rooms || rooms.length === 0) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-10">
+        <section className="panel">
+          <p>Rezervarile online nu sunt disponibile momentan pentru aceasta pensiune.</p>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-mist">
       <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
