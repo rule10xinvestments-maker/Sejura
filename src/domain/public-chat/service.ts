@@ -334,6 +334,12 @@ function isExplicitConfirmation(message: string) {
   );
 }
 
+function looksLikeRoomSelectionAttempt(message: string) {
+  return /\b(la|aleg|alege|camera|unitatea|etaj|parter)\b/i.test(
+    normalizeText(message)
+  );
+}
+
 function extractGuestContact(message: string, selectedRoomName?: string | null) {
   const email = message.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ?? null;
   const phoneMatch = message.match(/(?:\+4|004)?07\d{8}\b/);
@@ -472,13 +478,6 @@ export class AiReceptionistService {
     }
     const language = this.detectOrStoreGuestLanguage(trimmed);
     await conversationService.saveMessage(conversation, "guest", trimmed, language, {});
-
-    if (!process.env.OPENAI_API_KEY) {
-      const content =
-        "Asistentul de rezervari nu este disponibil momentan. Te rugam sa contactezi direct pensiunea.";
-      await conversationService.saveMessage(conversation, "ai", content, language, {});
-      return { message: content };
-    }
 
     const safeReply = await this.generateSafeDeterministicReply(conversation, trimmed, language);
     const aiMetadata = this.bookingDraftForNextAiMessage
@@ -707,7 +706,8 @@ export class AiReceptionistService {
   ) {
     const lower = message.toLowerCase();
     const existingDraft = await this.loadBookingDraft(conversation);
-    const parsed = parseBookingDetailsFromRomanianMessage(message);
+    const runtimeDateAnchor = new Date(new Date().getFullYear(), 0, 1);
+    const parsed = parseBookingDetailsFromRomanianMessage(message, runtimeDateAnchor);
     const hasFreshAvailabilityRequest = Boolean(
       parsed.start_date && parsed.end_date && parsed.guests_count
     );
@@ -833,6 +833,7 @@ export class AiReceptionistService {
       .from("conversations")
       .update({
         metadata: metadataWithBookingDraft(conversation, draft),
+        related_booking_id: null,
         guest_name: draft.guest_name,
         guest_phone: draft.guest_phone,
         guest_email: draft.guest_email,
@@ -940,7 +941,14 @@ export class AiReceptionistService {
     const selectedRoom = findSelectedRoom(draft, message);
     const selectedRoomName = selectedRoom?.name ?? draft.selected_room_name;
     const contact = extractGuestContact(message, selectedRoomName);
-    const looksLikeRoomSelection = /\b(la|aleg|camera|unitatea)\b/i.test(message);
+    const looksLikeRoomSelection = looksLikeRoomSelectionAttempt(message);
+
+    if (!selectedRoom && looksLikeRoomSelection && draft.available_rooms.length > 0) {
+      return language === "en"
+        ? "Please choose one of the rooms I just found as available."
+        : "Te rog sa alegi una dintre camerele gasite disponibile mai sus.";
+    }
+
     const nextDraft: BookingDraft = {
       ...draft,
       selected_room_id: selectedRoom?.room_id ?? draft.selected_room_id,
@@ -956,12 +964,6 @@ export class AiReceptionistService {
       guest_phone: contact.phone ?? draft.guest_phone,
       guest_email: contact.email ?? draft.guest_email
     };
-
-    if (!selectedRoom && looksLikeRoomSelection && draft.awaiting === "room_selection") {
-      return language === "en"
-        ? "Please choose one of the rooms I just found as available."
-        : "Te rog sa alegi una dintre camerele gasite disponibile mai sus.";
-    }
 
     if (nextDraft.selected_room_id && nextDraft.guest_name && (nextDraft.guest_phone || nextDraft.guest_email)) {
       nextDraft.awaiting = "explicit_confirmation";
