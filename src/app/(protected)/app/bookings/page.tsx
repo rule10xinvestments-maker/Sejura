@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { ManualBookingForm } from "@/components/bookings/manual-booking-form";
 import { BookingDomainError } from "@/domain/bookings/errors";
 import { bookingFormSchema } from "@/domain/bookings/schemas";
 import { BookingService } from "@/domain/bookings/service";
@@ -34,8 +35,9 @@ function pageMessage(key?: string) {
 }
 
 function pageError(key?: string) {
-  if (key === "invalid") return "Verifica datele rezervarii si incearca din nou.";
-  if (key === "unavailable") return "Camera nu este disponibila in intervalul ales.";
+  if (key === "invalid") return "Verifică datele rezervării și încearcă din nou.";
+  if (key === "unavailable") return "Camera nu este disponibilă în intervalul ales.";
+  if (key === "conflict") return "Există deja o rezervare suprapusă pentru această cameră.";
   if (key === "missing-property") return "Adauga mai intai detaliile proprietatii.";
   return null;
 }
@@ -88,6 +90,9 @@ export default async function BookingsPage({
       }
     } catch (error) {
       if (error instanceof BookingDomainError && error.code === "NOT_AVAILABLE") {
+        if (error.message.toLowerCase().includes("rezervare confirmata")) {
+          redirect("/app/bookings?error=conflict");
+        }
         redirect("/app/bookings?error=unavailable");
       }
       redirect("/app/bookings?error=invalid");
@@ -146,69 +151,12 @@ export default async function BookingsPage({
             </Link>
           </div>
         ) : (
-          <form action={saveBooking} className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input name="propertyId" type="hidden" value={property.id} />
-            <label className="grid gap-1 text-sm font-medium">
-              Camera/unitate
-              <select className="input" name="roomId" required>
-                {rooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              Status initial
-              <select className="input" name="mode" defaultValue="confirmed">
-                <option value="confirmed">Confirmata manual</option>
-                <option value="pending">In asteptare</option>
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              Nume oaspete
-              <input className="input" name="guestName" required />
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              Telefon
-              <input className="input" name="guestPhone" />
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              Sosire
-              <input className="input" name="startDate" required type="date" />
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              Plecare
-              <input className="input" name="endDate" required type="date" />
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              Oaspeti
-              <input
-                className="input"
-                min="1"
-                name="guestsCount"
-                required
-                type="number"
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              Pret/noapte (RON)
-              <input
-                className="input"
-                min="0"
-                name="pricePerNight"
-                step="1"
-                type="number"
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium sm:col-span-2">
-              Note interne
-              <textarea className="input min-h-24" name="guestNotes" />
-            </label>
-            <button className="button-primary sm:col-span-2" type="submit">
-              Salveaza rezervarea
-            </button>
-          </form>
+          <ManualBookingForm
+            action={saveBooking}
+            bookings={bookings}
+            propertyId={property.id}
+            rooms={rooms}
+          />
         )}
       </section>
 

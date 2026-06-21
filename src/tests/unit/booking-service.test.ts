@@ -305,6 +305,55 @@ describe("booking availability and transitions", () => {
     ).rejects.toMatchObject({ code: "NOT_AVAILABLE" });
   });
 
+  it("allows a different room for the same interval", async () => {
+    const repo = repository();
+    repo.bookings.push(
+      booking({
+        id: "blocking-booking",
+        room_id: roomId,
+        start_date: "2026-07-15",
+        end_date: "2026-07-17"
+      })
+    );
+
+    const created = await new BookingService(repo).createManualBooking(
+      {
+        ...validInput,
+        roomId: otherRoomId,
+        startDate: "2026-07-15",
+        endDate: "2026-07-17"
+      },
+      { ownerId }
+    );
+
+    expect(created.status).toBe("confirmed");
+    expect(created.room_id).toBe(otherRoomId);
+  });
+
+  it("rejects the same room for an overlapping interval", async () => {
+    const repo = repository();
+    repo.bookings.push(
+      booking({
+        id: "blocking-booking",
+        room_id: roomId,
+        start_date: "2026-07-15",
+        end_date: "2026-07-17"
+      })
+    );
+
+    await expect(
+      new BookingService(repo).createManualBooking(
+        {
+          ...validInput,
+          roomId,
+          startDate: "2026-07-16",
+          endDate: "2026-07-18"
+        },
+        { ownerId }
+      )
+    ).rejects.toMatchObject({ code: "NOT_AVAILABLE" });
+  });
+
   it("rechecks availability before confirming pending bookings", async () => {
     const repo = repository();
     const service = new BookingService(repo);
