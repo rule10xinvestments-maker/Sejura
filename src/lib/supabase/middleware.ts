@@ -1,14 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { SetAllCookies } from "@supabase/ssr";
+import { resolveSupabasePublicEnv } from "@/lib/env";
 import type { Database } from "@/lib/supabase/types";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const { url, publicKey } = resolveSupabasePublicEnv();
 
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    publicKey,
     {
       cookies: {
         getAll() {

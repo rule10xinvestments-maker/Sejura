@@ -36,7 +36,10 @@ test("onboarding smoke requires Supabase auth env for full create flow", async (
 }) => {
   test.skip(
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      !(
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+      ) ||
       !process.env.E2E_OWNER_EMAIL ||
       !process.env.E2E_OWNER_PASSWORD,
     "Supabase auth env and test owner credentials are required for full onboarding."
