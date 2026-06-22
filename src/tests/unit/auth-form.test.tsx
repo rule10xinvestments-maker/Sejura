@@ -2,8 +2,10 @@ import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthForm } from "@/components/auth/auth-form";
+import { EnvConfigError } from "@/lib/env";
 
 const authMocks = vi.hoisted(() => ({
+  createSupabaseBrowserClient: vi.fn(),
   signInWithOAuth: vi.fn(),
   signInWithPassword: vi.fn(),
   signUp: vi.fn()
@@ -17,16 +19,18 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
-  createSupabaseBrowserClient: () => ({
-    auth: authMocks
-  })
+  createSupabaseBrowserClient: authMocks.createSupabaseBrowserClient
 }));
 
 describe("AuthForm", () => {
   beforeEach(() => {
+    authMocks.createSupabaseBrowserClient.mockReset();
     authMocks.signInWithOAuth.mockReset();
     authMocks.signInWithPassword.mockReset();
     authMocks.signUp.mockReset();
+    authMocks.createSupabaseBrowserClient.mockReturnValue({
+      auth: authMocks
+    });
     authMocks.signUp.mockResolvedValue({ error: null });
     authMocks.signInWithPassword.mockResolvedValue({ error: null });
     authMocks.signInWithOAuth.mockResolvedValue({ error: null });
@@ -79,6 +83,23 @@ describe("AuthForm", () => {
 
     expect(screen.getByText("Parolele nu coincid.")).toBeVisible();
     expect(authMocks.signUp).not.toHaveBeenCalled();
+  });
+
+  it("shows missing Supabase env names instead of crashing the page", () => {
+    const secretLikeValue = "secret-value-that-must-not-appear";
+    authMocks.createSupabaseBrowserClient.mockImplementation(() => {
+      throw new EnvConfigError(
+        "Missing required environment variable(s): NEXT_PUBLIC_SUPABASE_URL",
+        ["NEXT_PUBLIC_SUPABASE_URL"]
+      );
+    });
+
+    render(<AuthForm mode="sign-in" />);
+
+    expect(screen.getByText("Autentificarea nu este configurata.")).toBeVisible();
+    expect(screen.getByText("NEXT_PUBLIC_SUPABASE_URL")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Intră" })).toBeDisabled();
+    expect(screen.queryByText(secretLikeValue)).not.toBeInTheDocument();
   });
 
   it("toggles password visibility without submitting", () => {

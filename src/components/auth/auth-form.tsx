@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EnvConfigError } from "@/lib/env";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthFormProps = {
@@ -12,13 +13,24 @@ type AuthFormProps = {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
-  const supabase = createSupabaseBrowserClient();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const isSignUp = mode === "sign-up";
+  let supabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
+  let configError: EnvConfigError | null = null;
+
+  try {
+    supabase = createSupabaseBrowserClient();
+  } catch (caught) {
+    if (caught instanceof EnvConfigError) {
+      configError = caught;
+    } else {
+      throw caught;
+    }
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,6 +43,11 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     if (isSignUp && password !== confirmPassword) {
       setError("Parolele nu coincid.");
+      return;
+    }
+
+    if (!supabase) {
+      setError("Autentificarea nu este configurata complet.");
       return;
     }
 
@@ -54,6 +71,12 @@ export function AuthForm({ mode }: AuthFormProps) {
   async function continueWithGoogle() {
     setGoogleLoading(true);
     setError(null);
+
+    if (!supabase) {
+      setError("Autentificarea nu este configurata complet.");
+      setGoogleLoading(false);
+      return;
+    }
 
     const origin = window.location.origin;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
@@ -81,6 +104,20 @@ export function AuthForm({ mode }: AuthFormProps) {
         <p className="mt-2 text-sm text-ink/65">
           Pentru proprietari de pensiuni, cabane si vile locale.
         </p>
+
+        {configError ? (
+          <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            <p className="font-semibold">Autentificarea nu este configurata.</p>
+            <p className="mt-1">
+              Lipsesc variabilele de mediu publice Supabase:
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {configError.missing.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <div className="space-y-1">
@@ -163,7 +200,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             </p>
           ) : null}
 
-          <button className="button-primary w-full" disabled={loading}>
+          <button className="button-primary w-full" disabled={loading || !supabase}>
             {loading
               ? "Se proceseaza..."
               : isSignUp
@@ -180,7 +217,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         <button
           className="button-secondary w-full"
-          disabled={googleLoading}
+          disabled={googleLoading || !supabase}
           onClick={continueWithGoogle}
           type="button"
         >
