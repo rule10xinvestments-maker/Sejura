@@ -3,6 +3,8 @@ import { JonnyChat } from "@/components/public/jonny-chat";
 import { jonnyIntro, PublicConversationService } from "@/domain/public-chat/service";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 
+export const dynamic = "force-dynamic";
+
 export default async function PublicPropertyPage({
   params
 }: {
