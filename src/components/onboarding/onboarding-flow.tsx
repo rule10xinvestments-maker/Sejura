@@ -39,18 +39,27 @@ export function OnboardingFlow({
       <div>
         <p className="text-sm font-semibold text-clay">Configurare</p>
         <h1 className="text-2xl font-bold">Porneste cu baza corecta</h1>
+        <p className="mt-1 text-sm text-ink/65">
+          Trei pasi simpli ca proprietatea sa fie pregatita pentru pilot.
+        </p>
       </div>
 
       <section className="space-y-3">
         {steps.map((step, index) => (
           <Link className="panel block" href={step.href} key={step.label}>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-ink/60">Pasul {index + 1}</p>
                 <h2 className="font-semibold">{step.label}</h2>
                 <p className="mt-1 text-sm text-ink/65">{step.helper}</p>
               </div>
-              <span className="rounded-md bg-mist px-3 py-1 text-sm font-semibold">
+              <span
+                className={
+                  step.done
+                    ? "w-fit rounded-md bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-800"
+                    : "w-fit rounded-md bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900"
+                }
+              >
                 {step.done ? "Gata" : "Lipseste"}
               </span>
             </div>

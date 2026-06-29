@@ -72,14 +72,90 @@ describe("parseBookingDetailsFromRomanianMessage", () => {
     });
   });
 
+  it("parses Romanian date range with diacritics and guest count", () => {
+    expect(
+      parseBookingDetailsFromRomanianMessage(
+        "Vreau o cameră pentru 2 persoane de pe 12 august până pe 14 august",
+        currentDate
+      )
+    ).toMatchObject({
+      start_date: "2026-08-12",
+      end_date: "2026-08-14",
+      guests_count: 2,
+      missing_fields: []
+    });
+  });
+
   it("does not infer vague weekend dates", () => {
     const parsed = parseBookingDetailsFromRomanianMessage(
-      "vreau weekendul viitor",
+      "Aveți liber weekendul viitor?",
       currentDate
     );
 
     expect(parsed.start_date).toBeNull();
     expect(parsed.end_date).toBeNull();
+    expect(parsed.missing_fields).toContain("start_date");
+    expect(parsed.missing_fields).toContain("end_date");
+  });
+
+  it("parses explicit tomorrow for one night conservatively", () => {
+    expect(
+      parseBookingDetailsFromRomanianMessage(
+        "Vreau cazare mâine pentru o noapte",
+        currentDate
+      )
+    ).toMatchObject({
+      start_date: "2026-06-02",
+      end_date: "2026-06-03",
+      guests_count: null,
+      missing_fields: ["guests_count"]
+    });
+  });
+
+  it("parses adults and one child as total guests", () => {
+    expect(
+      parseBookingDetailsFromRomanianMessage("2 adulți și un copil", currentDate)
+    ).toMatchObject({
+      start_date: null,
+      end_date: null,
+      guests_count: 3,
+      missing_fields: ["start_date", "end_date"]
+    });
+  });
+
+  it("does not infer checkout from a single weekday", () => {
+    const parsed = parseBookingDetailsFromRomanianMessage(
+      "o cameră dublă pentru sâmbătă",
+      currentDate
+    );
+
+    expect(parsed.start_date).toBeNull();
+    expect(parsed.end_date).toBeNull();
+    expect(parsed.guests_count).toBeNull();
+    expect(parsed.confidence).toBe("low");
+  });
+
+  it("requires clarification when checkout is not after check-in", () => {
+    const parsed = parseBookingDetailsFromRomanianMessage(
+      "cazare 14 august pana pe 12 august pentru 2 persoane",
+      currentDate
+    );
+
+    expect(parsed.start_date).toBe("2026-08-14");
+    expect(parsed.end_date).toBeNull();
+    expect(parsed.guests_count).toBe(2);
+    expect(parsed.missing_fields).toContain("end_date");
+  });
+
+  it("does not silently convert invalid periods into valid bookings", () => {
+    const parsed = parseBookingDetailsFromRomanianMessage(
+      "cazare 31 septembrie pana pe 3 octombrie pentru 2 persoane",
+      currentDate
+    );
+
+    expect(parsed.start_date).toBeNull();
+    expect(parsed.end_date).toBe("2026-10-03");
+    expect(parsed.guests_count).toBe(2);
     expect(parsed.missing_fields).toContain("start_date");
   });
 

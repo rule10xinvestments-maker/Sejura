@@ -21,6 +21,13 @@ export type ParsedBookingDetails = {
   missing_fields: Array<"start_date" | "end_date" | "guests_count" | "year">;
 };
 
+type DatePair = {
+  startDay: number;
+  startMonth: number;
+  endDay: number;
+  endMonth: number;
+};
+
 function pad(value: number) {
   return String(value).padStart(2, "0");
 }
@@ -38,6 +45,26 @@ function isValidDate(year: number, month: number, day: number) {
   );
 }
 
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function toLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function normalizeText(message: string) {
+  return message
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[–—]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalizeDate(
   day: number,
   month: number,
@@ -49,11 +76,7 @@ function normalizeDate(
   }
 
   const candidate = new Date(currentYear, month - 1, day);
-  const today = new Date(
-    currentDate.getFullYear(),
-    currentDate.getMonth(),
-    currentDate.getDate()
-  );
+  const today = toLocalDay(currentDate);
 
   if (candidate < today) {
     return { iso: null, needsYear: true };
@@ -62,9 +85,9 @@ function normalizeDate(
   return { iso: toIso(currentYear, month, day), needsYear: false };
 }
 
-function extractDatePair(message: string) {
-  const numeric = message.match(
-    /(?:de pe|din|intre|între)?\s*(\d{1,2})[\s./-]+(\d{1,2})\s*(?:pana(?:\s+pe)?|până(?:\s+pe)?|pina(?:\s+pe)?|-|–|—)\s*(?:pe|in|în|la)?\s*(\d{1,2})[\s./-]+(\d{1,2})/i
+function extractDatePair(normalizedMessage: string): DatePair | null {
+  const numeric = normalizedMessage.match(
+    /(?:de pe|din|intre)?\s*(\d{1,2})[\s./-]+(\d{1,2})\s*(?:pana(?:\s+pe)?|pina(?:\s+pe)?|-)\s*(?:pe|in|la)?\s*(\d{1,2})[\s./-]+(\d{1,2})/i
   );
   if (numeric) {
     return {
@@ -75,23 +98,30 @@ function extractDatePair(message: string) {
     };
   }
 
-  const named = message.match(
-    /(?:de pe|din|intre|între)?\s*(\d{1,2})\s+(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)\s*(?:pana(?:\s+pe)?|până(?:\s+pe)?|pina(?:\s+pe)?|-|–|—)\s*(?:pe|in|în|la)?\s*(\d{1,2})\s+(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)/i
+  const monthAlternation = Object.keys(monthNames).join("|");
+  const named = normalizedMessage.match(
+    new RegExp(
+      `(?:de pe|din|intre)?\\s*(\\d{1,2})\\s+(${monthAlternation})\\s*(?:pana(?:\\s+pe)?|pina(?:\\s+pe)?|-)\\s*(?:pe|in|la)?\\s*(\\d{1,2})\\s+(${monthAlternation})`,
+      "i"
+    )
   );
   if (named) {
     return {
       startDay: Number(named[1]),
-      startMonth: monthNames[named[2].toLowerCase()],
+      startMonth: monthNames[named[2]],
       endDay: Number(named[3]),
-      endMonth: monthNames[named[4].toLowerCase()]
+      endMonth: monthNames[named[4]]
     };
   }
 
-  const sharedNamedMonth = message.match(
-    /(?:de pe|din|intre|Ã®ntre)?\s*(\d{1,2})\s*(?:-|â€“|â€”|pana(?:\s+pe)?|pÃ¢nÄƒ(?:\s+pe)?|pina(?:\s+pe)?)\s*(\d{1,2})\s+(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)/i
+  const sharedNamedMonth = normalizedMessage.match(
+    new RegExp(
+      `(?:de pe|din|intre)?\\s*(\\d{1,2})\\s*(?:pana(?:\\s+pe)?|pina(?:\\s+pe)?|-)\\s*(\\d{1,2})\\s+(${monthAlternation})`,
+      "i"
+    )
   );
   if (sharedNamedMonth) {
-    const month = monthNames[sharedNamedMonth[3].toLowerCase()];
+    const month = monthNames[sharedNamedMonth[3]];
     return {
       startDay: Number(sharedNamedMonth[1]),
       startMonth: month,
@@ -103,19 +133,50 @@ function extractDatePair(message: string) {
   return null;
 }
 
-function extractGuests(message: string) {
-  const direct = message.match(
-    /(?:suntem|pentru)?\s*(\d{1,2})\s*(?:persoane|pers|adulti|adulți|oaspeti|oaspeți)\b/i
+function extractRelativeDateRange(normalizedMessage: string, currentDate: Date) {
+  const mentionsTomorrow = /\bmaine\b/.test(normalizedMessage);
+  const oneNight = /\b(?:o|1)\s+noapte\b/.test(normalizedMessage);
+
+  if (!mentionsTomorrow || !oneNight) {
+    return null;
+  }
+
+  const start = addDays(toLocalDay(currentDate), 1);
+  const end = addDays(start, 1);
+
+  return {
+    start_date: toIso(start.getFullYear(), start.getMonth() + 1, start.getDate()),
+    end_date: toIso(end.getFullYear(), end.getMonth() + 1, end.getDate())
+  };
+}
+
+function extractGuests(normalizedMessage: string) {
+  const adultsAndChildren = normalizedMessage.match(
+    /(\d{1,2})\s*adulti?\s+si\s+(?:(\d{1,2})|un|o)\s+cop(?:il|ii)\b/i
+  );
+  if (adultsAndChildren) {
+    const children =
+      adultsAndChildren[2] === undefined ? 1 : Number(adultsAndChildren[2]);
+    return Number(adultsAndChildren[1]) + children;
+  }
+
+  const peopleAndChild = normalizedMessage.match(
+    /(\d{1,2})\s*persoane?\s+si\s+(?:(\d{1,2})|un|o)\s+cop(?:il|ii)\b/i
+  );
+  if (peopleAndChild) {
+    const children = peopleAndChild[2] === undefined ? 1 : Number(peopleAndChild[2]);
+    return Number(peopleAndChild[1]) + children;
+  }
+
+  const direct = normalizedMessage.match(
+    /(?:suntem|pentru)?\s*(\d{1,2})\s*(?:persoane|pers|adulti|oaspeti)\b/i
   );
   if (direct) return Number(direct[1]);
 
-  const simpleChild = message.match(/(\d{1,2})\s*persoane?\s+si\s+un\s+copil/i);
-  if (simpleChild) return Number(simpleChild[1]) + 1;
-
-  const suntem = message.match(/\bsuntem\s+(\d{1,2})\b/i);
+  const suntem = normalizedMessage.match(/\bsuntem\s+(\d{1,2})\b/i);
   if (suntem) return Number(suntem[1]);
 
-  const pentru = message.match(
+  const pentru = normalizedMessage.match(
     /\bpentru\s+(\d{1,2})(?!\s*(?:\d|[./-]|ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie))\b/i
   );
   if (pentru) return Number(pentru[1]);
@@ -127,11 +188,15 @@ export function parseBookingDetailsFromRomanianMessage(
   message: string,
   currentDate = new Date()
 ): ParsedBookingDetails {
-  const datePair = extractDatePair(message);
-  const guests = extractGuests(message);
+  const normalizedMessage = normalizeText(message);
+  const datePair = extractDatePair(normalizedMessage);
+  const relativeDateRange = datePair
+    ? null
+    : extractRelativeDateRange(normalizedMessage, currentDate);
+  const guests = extractGuests(normalizedMessage);
   const missing: ParsedBookingDetails["missing_fields"] = [];
-  let startDate: string | null = null;
-  let endDate: string | null = null;
+  let startDate: string | null = relativeDateRange?.start_date ?? null;
+  let endDate: string | null = relativeDateRange?.end_date ?? null;
 
   if (datePair) {
     const start = normalizeDate(datePair.startDay, datePair.startMonth, currentDate);
@@ -156,7 +221,7 @@ export function parseBookingDetailsFromRomanianMessage(
     start_date: startDate,
     end_date: endDate,
     guests_count: guests,
-    confidence: missing.length === 0 ? "high" : datePair || guests ? "medium" : "low",
+    confidence: missing.length === 0 ? "high" : datePair || relativeDateRange || guests ? "medium" : "low",
     missing_fields: missing
   };
 }

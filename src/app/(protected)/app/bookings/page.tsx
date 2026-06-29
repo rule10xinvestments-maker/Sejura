@@ -7,7 +7,6 @@ import { bookingFormSchema } from "@/domain/bookings/schemas";
 import { BookingService } from "@/domain/bookings/service";
 import { bookingStatusLabels } from "@/domain/bookings/status-labels";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
-import type { BookingRecord } from "@/domain/bookings/types";
 import { GoogleCalendarService } from "@/domain/google-calendar/service";
 import { NotificationService } from "@/domain/notifications/service";
 import { getPrimaryProperty } from "@/domain/properties/service";
@@ -29,9 +28,9 @@ function pageMessage(key?: string) {
 }
 
 function pageError(key?: string) {
-  if (key === "invalid") return "Verifică datele rezervării și încearcă din nou.";
-  if (key === "unavailable") return "Camera nu este disponibilă în intervalul ales.";
-  if (key === "conflict") return "Există deja o rezervare suprapusă pentru această cameră.";
+  if (key === "invalid") return "Verifica datele rezervarii si incearca din nou.";
+  if (key === "unavailable") return "Camera nu este disponibila in intervalul ales.";
+  if (key === "conflict") return "Exista deja o rezervare suprapusa pentru aceasta camera.";
   if (key === "missing-property") return "Adauga mai intai detaliile proprietatii.";
   return null;
 }
@@ -58,6 +57,7 @@ export default async function BookingsPage({
     return a.start_date.localeCompare(b.start_date);
   });
   const roomNames = new Map(rooms.map((room) => [room.id, room.name]));
+  const pendingCount = bookings.filter((booking) => booking.status === "pending").length;
 
   async function saveBooking(formData: FormData) {
     "use server";
@@ -120,7 +120,21 @@ export default async function BookingsPage({
       <div>
         <p className="text-sm font-semibold text-clay">Rezervari interne</p>
         <h1 className="text-2xl font-bold">Rezervari</h1>
+        <p className="mt-1 text-sm text-ink/65">
+          Cererile in asteptare apar primele, ca sa le poti confirma rapid.
+        </p>
       </div>
+
+      {pendingCount > 0 ? (
+        <section className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">
+            Ai {pendingCount} {pendingCount === 1 ? "cerere" : "cereri"} in asteptare.
+          </p>
+          <p className="mt-1">
+            Deschide rezervarea si alege confirmare sau respingere.
+          </p>
+        </section>
+      ) : null}
 
       {successMessage ? (
         <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
@@ -158,7 +172,7 @@ export default async function BookingsPage({
         <h2 className="text-lg font-semibold">Lista rezervari</h2>
         {bookings.length === 0 ? (
           <p className="panel text-sm text-ink/70">
-          Nu ai rezervari salvate inca.
+            Nu ai rezervari salvate inca.
           </p>
         ) : (
           sortedBookings.map((booking) => (
@@ -171,17 +185,23 @@ export default async function BookingsPage({
                 <div>
                   <p className="font-semibold">{booking.guest_name}</p>
                   <p className="text-sm text-ink/65">
-                    {roomNames.get(booking.room_id) ?? "Camera"} ·{" "}
+                    {roomNames.get(booking.room_id) ?? "Camera"} -{" "}
                     {booking.start_date} - {booking.end_date}
                   </p>
                   <p className="text-sm text-ink/65">
-                    {booking.nights_count} nopti · {booking.guests_count} oaspeti ·{" "}
+                    {booking.nights_count} nopti - {booking.guests_count} oaspeti -{" "}
                     {booking.total_estimated_price
                       ? `${booking.total_estimated_price} ${booking.currency}`
                       : "total nesetat"}
                   </p>
                 </div>
-                <span className="w-fit rounded-md border border-line px-2 py-1 text-xs font-semibold">
+                <span
+                  className={
+                    booking.status === "pending"
+                      ? "w-fit rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-900"
+                      : "w-fit rounded-md border border-line px-2 py-1 text-xs font-semibold"
+                  }
+                >
                   {bookingStatusLabels[booking.status]}
                 </span>
               </div>

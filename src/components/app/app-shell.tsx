@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SejuraLogo } from "@/components/brand/sejura-logo";
 import { signOut } from "@/lib/auth/actions";
 
 const nav = [
@@ -21,14 +22,14 @@ export function AppShell({
   notificationCounts?: { unread: number; critical: number };
 }) {
   return (
-    <div className="min-h-screen bg-mist">
+    <div className="min-h-[100svh] bg-mist">
       <header className="sticky top-0 z-10 border-b border-line bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link className="text-lg font-bold" href="/app">
-            Sejura
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+          <Link href="/app">
+            <SejuraLogo size="sm" />
           </Link>
           <form action={signOut}>
-            <button className="button-secondary min-h-9 px-3 py-1" type="submit">
+            <button className="button-secondary min-h-10 px-3 py-1" type="submit">
               Iesi
             </button>
           </form>
@@ -36,7 +37,7 @@ export function AppShell({
         {notificationCounts && notificationCounts.unread > 0 ? (
           <div className="mx-auto max-w-5xl px-4 pb-2 text-sm">
             <Link
-              className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-3 py-2 font-semibold text-amber-900"
+              className="inline-flex w-full rounded-md border border-amber-200 bg-amber-50 px-3 py-2 font-semibold text-amber-900 sm:w-auto"
               href="/app/notifications"
             >
               {notificationCounts.critical > 0
@@ -45,10 +46,13 @@ export function AppShell({
             </Link>
           </div>
         ) : null}
-        <nav className="mx-auto flex max-w-5xl gap-2 overflow-x-auto px-4 pb-3">
+        <nav
+          aria-label="Navigare proprietar"
+          className="mx-auto flex max-w-5xl gap-2 overflow-x-auto px-4 pb-3"
+        >
           {nav.map((item) => (
             <Link
-              className="whitespace-nowrap rounded-md border border-line bg-white px-3 py-2 text-sm font-medium"
+              className="min-h-10 whitespace-nowrap rounded-md border border-line bg-white px-3 py-2 text-sm font-medium"
               href={item.href}
               key={item.href}
             >
@@ -57,7 +61,7 @@ export function AppShell({
           ))}
         </nav>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-5">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-4 sm:py-5">{children}</main>
     </div>
   );
 }

@@ -42,6 +42,9 @@ export function RoomsList({
       <div>
         <p className="text-sm font-semibold text-clay">Camere fizice</p>
         <h1 className="text-2xl font-bold">Unitati rezervabile</h1>
+        <p className="mt-1 text-sm text-ink/65">
+          Adauga camerele pe care le pot cere oaspetii in pagina publica.
+        </p>
       </div>
 
       {successMessage ? (
@@ -58,13 +61,19 @@ export function RoomsList({
       <section className="space-y-3">
         {rooms.map((room) => (
           <article className="panel" key={room.id}>
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="font-semibold">{room.name}</h2>
                 <p className="text-sm text-ink/65">
                   {room.max_guests} oaspeti - {room.base_price_per_night} RON/noapte
                 </p>
-                <p className="mt-1 text-xs font-semibold uppercase text-clay">
+                <p
+                  className={
+                    room.status === "active"
+                      ? "mt-2 w-fit rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold uppercase text-emerald-800"
+                      : "mt-2 w-fit rounded-md bg-mist px-2 py-1 text-xs font-semibold uppercase text-ink/65"
+                  }
+                >
                   {room.status === "active" ? "Activa" : "Inactiva"}
                 </p>
               </div>
@@ -72,7 +81,7 @@ export function RoomsList({
                 <form action={deactivateAction}>
                   <input name="property_id" type="hidden" value={property.id} />
                   <input name="room_id" type="hidden" value={room.id} />
-                  <button className="button-secondary min-h-9 px-3 py-1" type="submit">
+                  <button className="button-secondary min-h-10 px-3 py-1" type="submit">
                     Dezactiveaza
                   </button>
                 </form>

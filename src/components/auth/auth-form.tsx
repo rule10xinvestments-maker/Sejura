@@ -1,9 +1,11 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { SejuraLogo } from "@/components/brand/sejura-logo";
 import { EnvConfigError } from "@/lib/env";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -93,10 +95,22 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-mist px-4 py-8">
-      <section className="w-full max-w-md rounded-lg border border-line bg-white p-5 shadow-soft">
-        <Link className="text-lg font-bold text-ink" href="/">
-          Sejura
+    <main className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-[#f4f1e8] px-4 py-8">
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        fill
+        priority
+        sizes="100vw"
+        src="/brand/sejura-landing-background-v2.jpg"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[#f4f1e8]/40" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#eef4f0]/60 to-transparent" />
+
+      <section className="relative w-full max-w-md rounded-lg border border-line bg-white/92 p-5 shadow-soft backdrop-blur">
+        <Link href="/">
+          <SejuraLogo size="sm" />
         </Link>
         <h1 className="mt-6 text-2xl font-bold">
           {isSignUp ? "Creeaz\u0103 cont" : "Intr\u0103 in cont"}

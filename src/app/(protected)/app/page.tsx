@@ -14,6 +14,12 @@ export default async function DashboardPage() {
     notifications,
     activation
   } = await loadDashboardData(supabase, ownerId);
+  const confirmedBookings = bookings.filter(
+    (booking) => booking.status === "confirmed"
+  ).length;
+  const pendingBookings = bookings.filter(
+    (booking) => booking.status === "pending"
+  ).length;
 
   return (
     <div className="space-y-4">
@@ -41,9 +47,24 @@ export default async function DashboardPage() {
         </div>
         <div className="panel sm:col-span-3">
           <p className="text-sm text-ink/60">Rezervari active</p>
-          <p className="mt-2 text-xl font-bold">
-            {bookings.filter((booking) => booking.status === "confirmed").length}
-          </p>
+          <p className="mt-2 text-xl font-bold">{confirmedBookings}</p>
+        </div>
+        <div
+          className={
+            pendingBookings > 0
+              ? "rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-soft sm:col-span-3"
+              : "panel sm:col-span-3"
+          }
+        >
+          <p className="text-sm text-ink/60">Rezervari in asteptare</p>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xl font-bold">{pendingBookings}</p>
+            {pendingBookings > 0 ? (
+              <Link className="button-primary min-h-10 px-3 py-1" href="/app/bookings">
+                Confirma sau respinge
+              </Link>
+            ) : null}
+          </div>
         </div>
         <div className="panel sm:col-span-3">
           <p className="text-sm text-ink/60">Actiuni noi</p>

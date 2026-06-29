@@ -1,44 +1,117 @@
+import Image from "next/image";
 import Link from "next/link";
+import { SejuraLogo } from "@/components/brand/sejura-logo";
+
+const ownerHighlights = [
+  "Adaugi camerele",
+  "Urmaresti calendarul",
+  "Raspunzi mai usor la cereri"
+];
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-mist">
-      <section className="mx-auto flex min-h-screen max-w-5xl flex-col justify-between px-5 py-6">
-        <nav className="flex items-center justify-between">
-          <span className="text-lg font-bold text-ink">Sejura</span>
-          <Link className="button-secondary" href="/sign-in">
+    <main className="relative min-h-[100svh] overflow-hidden bg-[#f4f1e8]">
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        fill
+        priority
+        sizes="100vw"
+        src="/brand/sejura-landing-background-v2.jpg"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[#f4f1e8]/35" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#f4f1e8]/20 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#eef4f0]/45 to-transparent" />
+
+      <section className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col px-4 pb-5 pt-4 sm:px-6 sm:pb-8 sm:pt-6">
+        <nav className="flex items-center justify-between gap-3">
+          <SejuraLogo size="sm" />
+          <Link className="button-secondary min-h-10 px-4" href="/sign-in">
             Intra in cont
           </Link>
         </nav>
 
-        <div className="grid gap-8 py-12 md:grid-cols-[1.1fr_0.9fr] md:items-center">
-          <div className="max-w-2xl">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-clay">
-              Pentru proprietari locali
+        <div className="flex flex-1 flex-col justify-center gap-5 py-5 sm:gap-6 sm:py-10 lg:py-12">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-clay sm:text-sm">
+              Bine ai venit
             </p>
-            <h1 className="text-4xl font-bold leading-tight text-ink md:text-6xl">
-              Sejura
+            <h1 className="text-4xl font-bold leading-[1.05] text-ink sm:text-5xl lg:text-6xl">
+              Ce vrei sa faci in Sejura?
             </h1>
-            <p className="mt-4 text-xl text-ink/80">
-              Asistent de rezervari pentru pensiuni, cabane si vile locale.
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-ink/75 sm:text-xl">
+              Alege drumul potrivit: administrezi o pensiune, vila sau cabana,
+              ori cauti o cazare locala.
             </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link className="button-primary" href="/sign-up">
-                Creeaza cont
-              </Link>
-              <Link className="button-secondary" href="/sign-in">
-                Continua
-              </Link>
-            </div>
           </div>
 
-          <div className="panel">
-            <h2 className="text-lg font-semibold">Sprint 1: fundatie sigura</h2>
-            <ul className="mt-4 space-y-3 text-sm text-ink/75">
-              <li>Profil proprietar si autentificare Supabase.</li>
-              <li>Configurare proprietate, setari si camere fizice.</li>
-              <li>Verificare activare fara rezervari, calendar sau AI.</li>
-            </ul>
+          <div className="grid gap-3 lg:grid-cols-2 lg:gap-5">
+            <article className="rounded-lg border border-line bg-white/90 p-4 shadow-soft backdrop-blur sm:p-6">
+              <div className="flex items-start gap-3">
+                <SejuraLogo showText={false} size="md" />
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-clay">
+                    Pentru proprietari
+                  </p>
+                  <h2 className="mt-1 text-2xl font-bold text-ink">
+                    Sunt proprietar
+                  </h2>
+                </div>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-ink/75 sm:text-base">
+                Intra aici daca ai o pensiune, vila, cabana sau alta cazare si
+                vrei sa iti organizezi rezervarile.
+              </p>
+              <details className="mt-4 rounded-lg border border-line bg-mist/80 p-3 text-sm text-ink/75">
+                <summary className="cursor-pointer font-semibold text-moss">
+                  Vezi beneficiile pentru proprietari
+                </summary>
+                <ul className="mt-3 grid gap-2">
+                  {ownerHighlights.map((highlight) => (
+                    <li className="rounded-md bg-white/75 px-3 py-2" key={highlight}>
+                      {highlight}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Link className="button-primary min-h-12 px-5 text-base" href="/sign-in">
+                  Intra ca proprietar
+                </Link>
+                <Link className="button-secondary min-h-12 px-5 text-base" href="/sign-up">
+                  Creeaza cont
+                </Link>
+              </div>
+            </article>
+
+            <article className="rounded-lg border border-line bg-white/88 p-4 shadow-soft backdrop-blur sm:p-6">
+              <div className="inline-flex rounded-md bg-[#f7efe2] px-3 py-2 text-sm font-semibold text-clay">
+                Pentru oaspeti
+              </div>
+              <h2 className="mt-3 text-2xl font-bold text-ink">Caut cazare</h2>
+              <p className="mt-3 text-sm leading-6 text-ink/75 sm:text-base">
+                Alege aceasta varianta daca vrei sa gasesti o cazare locala si
+                sa trimiti o cerere de rezervare.
+              </p>
+              <details className="mt-4 rounded-lg border border-line bg-mist/80 p-3 text-sm text-ink/75">
+                <summary className="cursor-pointer font-semibold text-moss">
+                  Ce vei putea face aici
+                </summary>
+                <p className="mt-3 leading-6">
+                  Zona pentru oaspeti este in pregatire. In curand vei putea
+                  vedea proprietati si disponibilitate direct in Sejura.
+                </p>
+              </details>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Link className="button-secondary min-h-12 px-5 text-base" href="/guest">
+                  Caut cazare
+                </Link>
+                <Link className="button-secondary min-h-12 px-5 text-base" href="/sign-in">
+                  Am deja cont
+                </Link>
+              </div>
+            </article>
           </div>
         </div>
       </section>
