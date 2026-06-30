@@ -675,7 +675,10 @@ describe("public chat runtime safety", () => {
 
     expect(result.message).toContain("Am verificat disponibilitatea");
     expect(result.message).toContain("B parter");
-    expect(result.message).toContain("Rezervarea nu va fi confirmata automat");
+    expect(result.message).toContain(
+      "Cererea va fi procesată cât mai repede."
+    );
+    expect(result.message).not.toContain("Rezervarea nu va fi confirmata automat");
     expect(fake.calls.some((call) => call.table === "bookings")).toBe(true);
     expect(fake.rows.ai_tool_calls).toEqual(
       expect.arrayContaining([
@@ -730,7 +733,10 @@ describe("public chat runtime safety", () => {
 
     expect(result.message).toContain("Am verificat disponibilitatea");
     expect(result.message).toContain("B parter");
-    expect(result.message).toContain("Rezervarea nu va fi confirmata automat");
+    expect(result.message).toContain(
+      "Cererea va fi procesată cât mai repede."
+    );
+    expect(result.message).not.toContain("Rezervarea nu va fi confirmata automat");
     expect(fake.rows.ai_tool_calls).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1248,7 +1254,9 @@ describe("public chat runtime safety", () => {
     delete process.env.OPENAI_API_KEY;
 
     expect(result.message).toContain("Am verificat disponibilitatea");
-    expect(result.message).toContain("spune-mi camera aleasa, numele tau si un telefon sau email");
+    expect(result.message).toContain(
+      "voi trimite cererea către proprietar. Cererea va fi procesată cât mai repede."
+    );
     expect(result.message).not.toContain("Confirmi");
     expect(result.message).not.toContain("Mihai Evreu");
     expect(fake.rows.conversations[0].metadata).toMatchObject({

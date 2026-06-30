@@ -954,7 +954,7 @@ export class AiReceptionistService {
         `Am verificat disponibilitatea pentru ${parsed.start_date} - ${parsed.end_date}, ${parsed.guests_count} persoane.`,
         "Camere disponibile:",
         roomLines,
-        "Daca vrei sa trimit o cerere in asteptare catre proprietar, spune-mi camera aleasa, numele tau si un telefon sau email. Rezervarea nu va fi confirmata automat."
+        "Dacă îmi trimiți camera aleasă, numele tău și un telefon sau email, voi trimite cererea către proprietar. Cererea va fi procesată cât mai repede."
       ].join("\n");
     }
 
