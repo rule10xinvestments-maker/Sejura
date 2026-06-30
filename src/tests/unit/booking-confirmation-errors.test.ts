@@ -32,5 +32,15 @@ describe("confirmationErrorKey", () => {
       )
     ).toBe("calendar-sync");
   });
-});
 
+  it("maps required Google Calendar policy failures to a clear key", () => {
+    expect(
+      confirmationErrorKey(
+        new BookingDomainError(
+          "NOT_AVAILABLE",
+          "Rezervarea nu poate fi confirmata deoarece Google Calendar este obligatoriu pentru aceasta pensiune. Conecteaza calendarul sau dezactiveaza cerinta din setari."
+        )
+      )
+    ).toBe("calendar-required");
+  });
+});

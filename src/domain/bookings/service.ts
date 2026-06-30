@@ -262,7 +262,7 @@ export class BookingService {
       booking.property_id
     );
     const calendarRequired =
-      settings?.calendar_required_for_confirmation ?? true;
+      settings?.calendar_required_for_confirmation ?? false;
 
     const syncPatch = await this.trySyncConfirmedBooking(
       booking,
@@ -296,7 +296,7 @@ export class BookingService {
       booking.property_id
     );
     const calendarRequired =
-      settings?.calendar_required_for_confirmation ?? true;
+      settings?.calendar_required_for_confirmation ?? false;
 
     try {
       const syncPatch = await this.trySyncConfirmedBooking(
@@ -460,7 +460,7 @@ export class BookingService {
         });
         throw new BookingDomainError(
           "NOT_AVAILABLE",
-          "Google Calendar trebuie conectat pentru confirmare."
+          "Rezervarea nu poate fi confirmata deoarece Google Calendar este obligatoriu pentru aceasta pensiune. Conecteaza calendarul sau dezactiveaza cerinta din setari."
         );
       }
 
@@ -489,7 +489,7 @@ export class BookingService {
       if (calendarRequired) {
         throw new BookingDomainError(
           "NOT_AVAILABLE",
-          "Google Calendar nu a putut fi sincronizat. Rezervarea ramane in asteptare."
+          "Rezervarea nu poate fi confirmata deoarece Google Calendar este obligatoriu pentru aceasta pensiune. Conecteaza calendarul sau dezactiveaza cerinta din setari."
         );
       }
 

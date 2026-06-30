@@ -7,13 +7,15 @@ export function SettingsPanel({
   propertyId,
   publicBookingsAction,
   settings,
-  toggleAiAction
+  toggleAiAction,
+  toggleCalendarRequiredAction
 }: {
   autoConfirmationAction: (formData: FormData) => void;
   propertyId: string | null;
   publicBookingsAction: (formData: FormData) => void;
   settings: PropertySettings | null;
   toggleAiAction: (formData: FormData) => void;
+  toggleCalendarRequiredAction: (formData: FormData) => void;
 }) {
   if (!settings) {
     return (
@@ -74,6 +76,37 @@ export function SettingsPanel({
               type="submit"
             >
               {settings.public_booking_enabled ? "Activat" : "Dezactivat"}
+            </button>
+          </form>
+        </div>
+
+        <div className="flex flex-col gap-2 border-b border-line pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">Google Calendar obligatoriu</p>
+            <p className="text-sm text-ink/65">
+              Cand este dezactivat, confirmarea merge in Sejura chiar daca
+              sincronizarea calendarului esueaza.
+            </p>
+          </div>
+          <form action={toggleCalendarRequiredAction}>
+            <input name="propertyId" type="hidden" value={propertyId ?? ""} />
+            <input
+              name="enabled"
+              type="hidden"
+              value={settings.calendar_required_for_confirmation ? "false" : "true"}
+            />
+            <button
+              aria-pressed={settings.calendar_required_for_confirmation}
+              className={
+                settings.calendar_required_for_confirmation
+                  ? "button-primary"
+                  : "button-secondary"
+              }
+              type="submit"
+            >
+              {settings.calendar_required_for_confirmation
+                ? "Obligatoriu"
+                : "Optional"}
             </button>
           </form>
         </div>

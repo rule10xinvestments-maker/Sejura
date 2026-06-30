@@ -19,7 +19,8 @@ function settingsSupabase() {
         property_id: "property-1",
         ai_enabled: false,
         public_booking_enabled: false,
-        allow_auto_confirmation: true
+        allow_auto_confirmation: true,
+        calendar_required_for_confirmation: false
       },
       {
         id: "settings-2",
@@ -27,7 +28,8 @@ function settingsSupabase() {
         property_id: "property-2",
         ai_enabled: false,
         public_booking_enabled: false,
-        allow_auto_confirmation: false
+        allow_auto_confirmation: false,
+        calendar_required_for_confirmation: false
       }
     ],
     property_public_pages: [
@@ -189,5 +191,27 @@ describe("settings service", () => {
     await keepAutoConfirmationDisabled(fake.client, "owner-1", "property-1");
 
     expect(fake.tables.property_settings[0].allow_auto_confirmation).toBe(false);
+  });
+
+  it("toggles whether Google Calendar is required for confirmation", async () => {
+    const fake = settingsSupabase();
+
+    await updatePilotSetting(
+      fake.client,
+      "owner-1",
+      "property-1",
+      "calendar_required_for_confirmation",
+      true
+    );
+    expect(fake.tables.property_settings[0].calendar_required_for_confirmation).toBe(true);
+
+    await updatePilotSetting(
+      fake.client,
+      "owner-1",
+      "property-1",
+      "calendar_required_for_confirmation",
+      false
+    );
+    expect(fake.tables.property_settings[0].calendar_required_for_confirmation).toBe(false);
   });
 });

@@ -122,7 +122,8 @@ export async function ensurePropertyFoundation(
       property_id: propertyId,
       ai_enabled: false,
       public_booking_enabled: false,
-      allow_auto_confirmation: false
+      allow_auto_confirmation: false,
+      calendar_required_for_confirmation: false
     },
     { onConflict: "property_id" }
   );

@@ -49,7 +49,7 @@ export class MemoryBookingRepository implements BookingRepository {
         ai_enabled: false,
         public_booking_enabled: false,
         allow_auto_confirmation: false,
-        calendar_required_for_confirmation: true,
+        calendar_required_for_confirmation: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }

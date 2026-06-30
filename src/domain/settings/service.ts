@@ -1,6 +1,9 @@
 import type { AppSupabaseClient } from "@/lib/supabase/types";
 
-export type PilotSettingKey = "ai_enabled" | "public_booking_enabled";
+export type PilotSettingKey =
+  | "ai_enabled"
+  | "public_booking_enabled"
+  | "calendar_required_for_confirmation";
 
 export async function getPropertySettings(
   supabase: AppSupabaseClient,
@@ -46,7 +49,9 @@ export async function updatePilotSetting(
   const settingsPatch =
     key === "ai_enabled"
       ? { ai_enabled: enabled, allow_auto_confirmation: false }
-      : { public_booking_enabled: enabled, allow_auto_confirmation: false };
+      : key === "public_booking_enabled"
+        ? { public_booking_enabled: enabled, allow_auto_confirmation: false }
+        : { calendar_required_for_confirmation: enabled };
 
   const { data: settings, error: settingsError } = await supabase
     .from("property_settings")

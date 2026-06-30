@@ -3,6 +3,7 @@ import { BookingDomainError } from "@/domain/bookings/errors";
 export type ConfirmationErrorKey =
   | "confirmation-conflict"
   | "confirmation-validation"
+  | "calendar-required"
   | "calendar-sync";
 
 export function confirmationErrorKey(error: unknown): ConfirmationErrorKey {
@@ -16,6 +17,9 @@ export function confirmationErrorKey(error: unknown): ConfirmationErrorKey {
 
   if (error.code === "NOT_AVAILABLE") {
     const message = error.message.toLowerCase();
+    if (message.includes("google calendar este obligatoriu")) {
+      return "calendar-required";
+    }
     if (
       message.includes("rezervare confirmata") ||
       message.includes("ocupat") ||
@@ -28,4 +32,3 @@ export function confirmationErrorKey(error: unknown): ConfirmationErrorKey {
 
   return "confirmation-validation";
 }
-

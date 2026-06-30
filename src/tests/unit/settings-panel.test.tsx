@@ -11,6 +11,7 @@ const settings = {
   ai_enabled: false,
   public_booking_enabled: false,
   allow_auto_confirmation: false,
+  calendar_required_for_confirmation: false,
   created_at: "2026-01-01T00:00:00.000Z",
   updated_at: "2026-01-01T00:00:00.000Z"
 } as PropertySettings;
@@ -23,6 +24,7 @@ function renderPanel(overrides: Partial<PropertySettings> = {}) {
       publicBookingsAction={vi.fn()}
       settings={{ ...settings, ...overrides }}
       toggleAiAction={vi.fn()}
+      toggleCalendarRequiredAction={vi.fn()}
     />
   );
 }
@@ -55,5 +57,29 @@ describe("SettingsPanel", () => {
         "Pentru pilot, Jonny si cererile publice se folosesc doar in modul in asteptare. Confirmarea automata ramane dezactivata."
       )
     ).toBeVisible();
+  });
+
+  it("shows Google Calendar as optional by default for pilot confirmation", () => {
+    renderPanel();
+
+    expect(screen.getByText("Google Calendar obligatoriu")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Optional" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+    expect(
+      screen.getByText(
+        "Cand este dezactivat, confirmarea merge in Sejura chiar daca sincronizarea calendarului esueaza."
+      )
+    ).toBeVisible();
+  });
+
+  it("shows when Google Calendar is required for confirmation", () => {
+    renderPanel({ calendar_required_for_confirmation: true });
+
+    expect(screen.getByRole("button", { name: "Obligatoriu" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 });

@@ -17,10 +17,16 @@ type SearchParams = {
 function statusMessage(status?: string) {
   if (status === "ai-enabled") return "AI a fost activat.";
   if (status === "ai-disabled") return "AI a fost dezactivat.";
-  if (status === "public-enabled") return "Rezervările publice au fost activate.";
-  if (status === "public-disabled") return "Rezervările publice au fost dezactivate.";
-  if (status === "auto-disabled") return "Confirmarea automată este dezactivată pentru pilot.";
-  if (status === "error") return "Setările nu au putut fi salvate. Încearcă din nou.";
+  if (status === "public-enabled") return "Rezervarile publice au fost activate.";
+  if (status === "public-disabled") return "Rezervarile publice au fost dezactivate.";
+  if (status === "calendar-required") {
+    return "Google Calendar este obligatoriu pentru confirmarea rezervarilor.";
+  }
+  if (status === "calendar-optional") {
+    return "Confirmarea rezervarilor este permisa si fara Google Calendar.";
+  }
+  if (status === "auto-disabled") return "Confirmarea automata este dezactivata pentru pilot.";
+  if (status === "error") return "Setarile nu au putut fi salvate. Incearca din nou.";
   return null;
 }
 
@@ -84,6 +90,32 @@ export default async function SettingsPage({
     redirect(`/app/settings?status=${enabled ? "public-enabled" : "public-disabled"}`);
   }
 
+  async function toggleCalendarRequired(formData: FormData) {
+    "use server";
+
+    const serverSupabase = createSupabaseServerClient();
+    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
+    const propertyId = String(formData.get("propertyId") ?? "");
+    const enabled = String(formData.get("enabled")) === "true";
+
+    try {
+      await updatePilotSetting(
+        serverSupabase,
+        serverOwnerId,
+        propertyId,
+        "calendar_required_for_confirmation",
+        enabled
+      );
+    } catch {
+      redirect("/app/settings?status=error");
+    }
+
+    revalidatePath("/app/settings");
+    redirect(
+      `/app/settings?status=${enabled ? "calendar-required" : "calendar-optional"}`
+    );
+  }
+
   async function keepAutoConfirmationOff(formData: FormData) {
     "use server";
 
@@ -126,6 +158,7 @@ export default async function SettingsPage({
         publicBookingsAction={togglePublicBookings}
         settings={settings}
         toggleAiAction={toggleAi}
+        toggleCalendarRequiredAction={toggleCalendarRequired}
       />
     </div>
   );

@@ -39,8 +39,11 @@ function pageError(key?: string) {
   if (key === "confirmation-validation") {
     return "Verifica datele rezervarii inainte de confirmare.";
   }
+  if (key === "calendar-required") {
+    return "Rezervarea nu poate fi confirmata deoarece Google Calendar este obligatoriu pentru aceasta pensiune. Conecteaza calendarul sau dezactiveaza cerinta din setari.";
+  }
   if (key === "calendar-sync") {
-    return "Rezervarea ramane in asteptare deoarece sincronizarea calendarului nu a reusit.";
+    return "Sincronizarea Google Calendar nu a reusit. Daca Google Calendar nu este obligatoriu, rezervarea ramane confirmata in Sejura.";
   }
   return null;
 }
@@ -213,6 +216,12 @@ export default async function BookingDetailPage({
             <p>
               {ownerSafeGoogleCalendarMessage(booking.calendar_sync_error_code)}
             </p>
+            {booking.status === "confirmed" ? (
+              <p className="mt-1">
+                Rezervarea este confirmata in Sejura, dar calendarul nu a fost
+                sincronizat.
+              </p>
+            ) : null}
             {booking.status === "confirmed" ? (
               <form action={retryCalendarSync} className="mt-3">
                 <button className="button-secondary" type="submit">

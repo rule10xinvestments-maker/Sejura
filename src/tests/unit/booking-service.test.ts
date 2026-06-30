@@ -652,6 +652,80 @@ describe("booking availability and transitions", () => {
     expect(confirmed.calendar_sync_error_code).toBe("GOOGLE_EVENT_CREATE_FAILED");
   });
 
+  it("confirms pending booking when Google Calendar is disconnected and not required", async () => {
+    const repo = repository();
+    const port: BookingCalendarSyncPort = {
+      syncConfirmedBooking: vi.fn(async () => {
+        throw new GoogleCalendarError(
+          "GOOGLE_CALENDAR_DISCONNECTED",
+          "Google Calendar este deconectat."
+        );
+      }),
+      markCancelledBooking: vi.fn()
+    };
+    const service = new BookingService(repo, port);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+
+    const confirmed = await service.confirmBooking(pending.id, { ownerId });
+
+    expect(confirmed.status).toBe("confirmed");
+    expect(confirmed.calendar_sync_status).toBe("failed");
+    expect(confirmed.calendar_sync_error_code).toBe("GOOGLE_CALENDAR_DISCONNECTED");
+  });
+
+  it("blocks pending confirmation when Google Calendar is disconnected and required", async () => {
+    const repo = requireCalendarRepository();
+    const port: BookingCalendarSyncPort = {
+      syncConfirmedBooking: vi.fn(async () => {
+        throw new GoogleCalendarError(
+          "GOOGLE_CALENDAR_DISCONNECTED",
+          "Google Calendar este deconectat."
+        );
+      }),
+      markCancelledBooking: vi.fn()
+    };
+    const service = new BookingService(repo, port);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+
+    await expect(service.confirmBooking(pending.id, { ownerId })).rejects.toMatchObject({
+      code: "NOT_AVAILABLE",
+      message:
+        "Rezervarea nu poate fi confirmata deoarece Google Calendar este obligatoriu pentru aceasta pensiune. Conecteaza calendarul sau dezactiveaza cerinta din setari."
+    });
+    const afterFailure = await service.getBooking(pending.id, { ownerId });
+    expect(afterFailure.status).toBe("pending");
+    expect(afterFailure.calendar_sync_status).toBe("failed");
+    expect(afterFailure.calendar_sync_error_code).toBe("GOOGLE_CALENDAR_DISCONNECTED");
+  });
+
+  it("lists confirmed bookings for internal calendar data without Google Calendar sync when not required", async () => {
+    const repo = repository();
+    const port: BookingCalendarSyncPort = {
+      syncConfirmedBooking: vi.fn(async () => {
+        throw new GoogleCalendarError(
+          "GOOGLE_CALENDAR_DISCONNECTED",
+          "Google Calendar este deconectat."
+        );
+      }),
+      markCancelledBooking: vi.fn()
+    };
+    const service = new BookingService(repo, port);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+    const confirmed = await service.confirmBooking(pending.id, { ownerId });
+
+    const bookings = await service.listBookings({ ownerId });
+
+    expect(bookings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: confirmed.id,
+          status: "confirmed",
+          calendar_sync_status: "failed"
+        })
+      ])
+    );
+  });
+
   it("marks reconnect-required calendar failures visibly without confirming when required", async () => {
     const repo = requireCalendarRepository();
     const port: BookingCalendarSyncPort = {
