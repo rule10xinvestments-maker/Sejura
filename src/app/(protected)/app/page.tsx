@@ -28,6 +28,27 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold">Bun venit in Sejura</h1>
       </div>
 
+      <section className="grid gap-2 sm:grid-cols-3">
+        <Link className="button-primary min-h-11 justify-center" href="/app/rooms">
+          Camere
+        </Link>
+        <Link className="button-secondary min-h-11 justify-center" href="/app/bookings">
+          Rezervari
+        </Link>
+        {property ? (
+          <Link
+            className="button-secondary min-h-11 justify-center"
+            href={`/p/${property.slug}`}
+          >
+            Pagina pentru oaspeti
+          </Link>
+        ) : (
+          <Link className="button-secondary min-h-11 justify-center" href="/app/property">
+            Pagina publica
+          </Link>
+        )}
+      </section>
+
       <section className="grid gap-3 sm:grid-cols-3">
         <div className="panel">
           <p className="text-sm text-ink/60">Proprietate</p>
@@ -113,6 +134,11 @@ export default async function DashboardPage() {
           <Link className="button-secondary" href="/app/bookings">
             Vezi rezervari
           </Link>
+          {property ? (
+            <Link className="button-secondary" href={`/p/${property.slug}`}>
+              Deschide pagina pentru oaspeti
+            </Link>
+          ) : null}
         </div>
       </section>
 

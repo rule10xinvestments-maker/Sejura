@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { SejuraLogo } from "@/components/brand/sejura-logo";
 import { JonnyChat } from "@/components/public/jonny-chat";
 import { jonnyIntro, PublicConversationService } from "@/domain/public-chat/service";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +16,13 @@ export default async function PublicPropertyPage({
   const service = new PublicConversationService(supabase);
   const readiness = await service.getPublicPageReadiness(params.propertySlug);
   const context = readiness.context;
+  const ownerClient = createSupabaseServerClient();
+  const {
+    data: { user }
+  } = await ownerClient.auth.getUser();
+  const isOwnerViewingOwnPublicPage = Boolean(
+    user && context?.property.owner_id === user.id
+  );
 
   if (
     !context ||
@@ -53,9 +62,16 @@ export default async function PublicPropertyPage({
       <div className="mx-auto max-w-3xl space-y-5 px-4 py-5 sm:py-6">
         <header className="flex items-center justify-between gap-3">
           <SejuraLogo size="sm" />
-          <span className="rounded-md bg-white px-3 py-2 text-xs font-semibold text-moss shadow-soft">
-            Pagina publica
-          </span>
+          <div className="flex flex-wrap justify-end gap-2">
+            {isOwnerViewingOwnPublicPage ? (
+              <Link className="button-primary min-h-10 px-3 py-2 text-sm" href="/app/rooms">
+                Administreaza pensiunea
+              </Link>
+            ) : null}
+            <span className="rounded-md bg-white px-3 py-2 text-xs font-semibold text-moss shadow-soft">
+              Pagina pentru oaspeti
+            </span>
+          </div>
         </header>
 
         <section className="rounded-lg border border-line bg-white p-5 shadow-soft">

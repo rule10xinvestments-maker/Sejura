@@ -39,12 +39,17 @@ export function RoomsList({
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-sm font-semibold text-clay">Camere fizice</p>
-        <h1 className="text-2xl font-bold">Unitati rezervabile</h1>
-        <p className="mt-1 text-sm text-ink/65">
-          Adauga camerele pe care le pot cere oaspetii in pagina publica.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-clay">Camere fizice</p>
+          <h1 className="text-2xl font-bold">Unitati rezervabile</h1>
+          <p className="mt-1 text-sm text-ink/65">
+            Adauga camerele pe care le pot cere oaspetii in pagina publica.
+          </p>
+        </div>
+        <a className="button-primary min-h-11 justify-center sm:w-auto" href="#camera-noua">
+          Adauga camera
+        </a>
       </div>
 
       {successMessage ? (
@@ -53,8 +58,8 @@ export function RoomsList({
         </p>
       ) : null}
 
-      <section className="panel">
-        <h2 className="mb-4 text-lg font-semibold">Camera noua</h2>
+      <section className="panel scroll-mt-28" id="camera-noua">
+        <h2 className="mb-4 text-lg font-semibold">Adauga camera</h2>
         <RoomForm action={saveAction} propertyId={property.id} />
       </section>
 
@@ -81,8 +86,8 @@ export function RoomsList({
                 <form action={deactivateAction}>
                   <input name="property_id" type="hidden" value={property.id} />
                   <input name="room_id" type="hidden" value={room.id} />
-                  <button className="button-secondary min-h-10 px-3 py-1" type="submit">
-                    Dezactiveaza
+                  <button className="button-secondary min-h-11 px-3 py-2" type="submit">
+                    Dezactiveaza camera
                   </button>
                 </form>
               ) : null}

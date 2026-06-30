@@ -67,7 +67,11 @@ describe("RoomsList", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Camera noua" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Adauga camera" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Adauga camera" })).toHaveAttribute(
+      "href",
+      "#camera-noua"
+    );
     expect(screen.getByLabelText("Nume camer\u0103/unitate")).toBeVisible();
     expect(screen.getByLabelText("Status")).toHaveValue("active");
     expect(
@@ -91,9 +95,8 @@ describe("RoomsList", () => {
     expect(
       screen.getByRole("button", { name: "Salveaz\u0103 modific\u0103rile" })
     ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Dezactiveaza" })).toHaveAttribute(
-      "type",
-      "submit"
-    );
+    expect(
+      screen.getByRole("button", { name: "Dezactiveaza camera" })
+    ).toHaveAttribute("type", "submit");
   });
 });
