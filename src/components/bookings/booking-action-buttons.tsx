@@ -11,19 +11,39 @@ type BookingActionButtonsProps = {
   status: BookingRecord["status"];
 };
 
+type BookingActionError = {
+  code?: string;
+  error?: string;
+};
+
 const successMessages: Record<BookingAction, string> = {
   confirm: "confirmed",
   reject: "rejected",
   cancel: "cancelled"
 };
 
-function ownerSafeError(action: BookingAction, status: number) {
+function ownerSafeError(
+  action: BookingAction,
+  status: number,
+  body?: BookingActionError
+) {
   if (status === 401 || status === 403 || status === 404) {
     return "Nu am putut procesa actiunea pentru aceasta rezervare.";
   }
 
+  if (body?.code === "ROOM_NOT_AVAILABLE") {
+    return "Camera nu mai este disponibilă pentru perioada aleasă.";
+  }
+
+  if (body?.code === "GOOGLE_CALENDAR_REQUIRED") {
+    return "Google Calendar trebuie conectat înainte de confirmare.";
+  }
+
   if (action === "confirm" && status === 409) {
-    return "Nu se poate confirma rezervarea. Verifica disponibilitatea camerei si setarile calendarului.";
+    return (
+      body?.error ??
+      "Nu se poate confirma rezervarea. Verifică disponibilitatea camerei."
+    );
   }
 
   if (action === "reject" && status === 409) {
@@ -57,7 +77,10 @@ export function BookingActionButtons({
       });
 
       if (!response.ok) {
-        setError(ownerSafeError(action, response.status));
+        const body = (await response.json().catch(() => undefined)) as
+          | BookingActionError
+          | undefined;
+        setError(ownerSafeError(action, response.status, body));
         return;
       }
 

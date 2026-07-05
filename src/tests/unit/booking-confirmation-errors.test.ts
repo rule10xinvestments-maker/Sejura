@@ -8,7 +8,7 @@ describe("confirmationErrorKey", () => {
       confirmationErrorKey(
         new BookingDomainError(
           "NOT_AVAILABLE",
-          "Exista deja o rezervare confirmata in acest interval."
+          "Camera nu mai este disponibilă pentru perioada aleasă."
         )
       )
     ).toBe("confirmation-conflict");

@@ -7,6 +7,9 @@ import type {
 } from "@/domain/bookings/types";
 import type { AppSupabaseClient } from "@/lib/supabase/types";
 
+const ROOM_NOT_AVAILABLE_MESSAGE =
+  "Camera nu mai este disponibilă pentru perioada aleasă.";
+
 export class SupabaseBookingRepository implements BookingRepository {
   constructor(private supabase: AppSupabaseClient) {}
 
@@ -31,7 +34,7 @@ export class SupabaseBookingRepository implements BookingRepository {
       if (this.isOverlapConstraintError(error)) {
         throw new BookingDomainError(
           "NOT_AVAILABLE",
-          "Exista deja o rezervare confirmata in acest interval."
+          ROOM_NOT_AVAILABLE_MESSAGE
         );
       }
       throw error;
@@ -174,7 +177,7 @@ export class SupabaseBookingRepository implements BookingRepository {
       if (this.isOverlapConstraintError(error)) {
         throw new BookingDomainError(
           "NOT_AVAILABLE",
-          "Exista deja o rezervare confirmata in acest interval."
+          ROOM_NOT_AVAILABLE_MESSAGE
         );
       }
       throw error;
@@ -195,7 +198,7 @@ export class SupabaseBookingRepository implements BookingRepository {
       if (this.isOverlapConstraintError(error)) {
         throw new BookingDomainError(
           "NOT_AVAILABLE",
-          "Exista deja o rezervare confirmata in acest interval."
+          ROOM_NOT_AVAILABLE_MESSAGE
         );
       }
       throw new BookingDomainError("NOT_FOUND", "Rezervarea nu a fost gasita.");

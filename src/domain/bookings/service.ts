@@ -99,7 +99,7 @@ export class AvailabilityService {
     });
 
     if (blockingBookings.length > 0) {
-      reasons.push("Exista deja o rezervare confirmata in acest interval.");
+      reasons.push("Camera nu mai este disponibilă pentru perioada aleasă.");
     }
 
     const roomBlocks = await this.repository.listRoomBlocks({

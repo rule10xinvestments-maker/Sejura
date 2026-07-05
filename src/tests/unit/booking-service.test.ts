@@ -197,7 +197,7 @@ describe("booking availability and transitions", () => {
     );
 
     expect(result.available).toBe(false);
-    expect(result.reasons).toContain("Exista deja o rezervare confirmata in acest interval.");
+    expect(result.reasons).toContain("Camera nu mai este disponibilă pentru perioada aleasă.");
   });
 
   it("ignores cancelled and rejected bookings for availability", async () => {
@@ -413,7 +413,8 @@ describe("booking availability and transitions", () => {
     );
 
     await expect(service.confirmBooking(pending.id, { ownerId })).rejects.toMatchObject({
-      code: "NOT_AVAILABLE"
+      code: "NOT_AVAILABLE",
+      message: "Camera nu mai este disponibilă pentru perioada aleasă."
     });
   });
 
@@ -447,6 +448,32 @@ describe("booking availability and transitions", () => {
         start_date: validInput.startDate,
         end_date: validInput.endDate,
         confirmed_at: null
+      })
+    );
+
+    await expect(service.confirmBooking(pending.id, { ownerId })).resolves.toMatchObject({
+      status: "confirmed"
+    });
+  });
+
+  it("allows confirming when overlapping cancelled and rejected bookings exist", async () => {
+    const repo = repository();
+    const service = new BookingService(repo);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+    repo.bookings.push(
+      booking({
+        id: "cancelled-overlap",
+        status: "cancelled",
+        start_date: validInput.startDate,
+        end_date: validInput.endDate,
+        cancelled_at: "2026-01-02T00:00:00.000Z"
+      }),
+      booking({
+        id: "rejected-overlap",
+        status: "rejected",
+        start_date: validInput.startDate,
+        end_date: validInput.endDate,
+        rejected_at: "2026-01-03T00:00:00.000Z"
       })
     );
 

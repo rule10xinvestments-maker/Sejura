@@ -21,7 +21,9 @@ export function confirmationErrorKey(error: unknown): ConfirmationErrorKey {
       return "calendar-required";
     }
     if (
+      message.includes("camera nu mai este disponibil") ||
       message.includes("rezervare confirmata") ||
+      message.includes("rezervare confirmată") ||
       message.includes("ocupat") ||
       message.includes("interval")
     ) {

@@ -3,6 +3,33 @@ import { ZodError } from "zod";
 import { BookingDomainError } from "@/domain/bookings/errors";
 import { GoogleCalendarError } from "@/domain/google-calendar/errors";
 
+function publicBookingError(error: BookingDomainError) {
+  const message = error.message.toLowerCase();
+
+  if (
+    message.includes("camera nu mai este disponibil") ||
+    message.includes("rezervare confirmata") ||
+    message.includes("rezervare confirmată")
+  ) {
+    return {
+      code: "ROOM_NOT_AVAILABLE",
+      error: "Camera nu mai este disponibilă pentru perioada aleasă."
+    };
+  }
+
+  if (message.includes("google calendar este obligatoriu")) {
+    return {
+      code: "GOOGLE_CALENDAR_REQUIRED",
+      error: "Google Calendar trebuie conectat înainte de confirmare."
+    };
+  }
+
+  return {
+    code: error.code,
+    error: error.message
+  };
+}
+
 export function jsonError(error: unknown) {
   if (error instanceof ZodError) {
     return NextResponse.json(
@@ -25,7 +52,7 @@ export function jsonError(error: unknown) {
             ? 409
             : 400;
 
-    return NextResponse.json({ error: error.message }, { status });
+    return NextResponse.json(publicBookingError(error), { status });
   }
 
   if (error instanceof GoogleCalendarError) {
