@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { confirmationErrorKey } from "@/domain/bookings/confirmation-errors";
+import { BookingActionButtons } from "@/components/bookings/booking-action-buttons";
 import { BookingDomainError } from "@/domain/bookings/errors";
 import { BookingService } from "@/domain/bookings/service";
 import { bookingStatusLabels } from "@/domain/bookings/status-labels";
@@ -74,63 +74,6 @@ export default async function BookingDetailPage({
   }
 
   const events = await service.getBookingEvents(params.bookingId, { ownerId });
-
-  async function confirmBooking() {
-    "use server";
-
-    const serverSupabase = createSupabaseServerClient();
-    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
-    const serverService = new BookingService(
-      new SupabaseBookingRepository(serverSupabase),
-      new GoogleCalendarService(serverSupabase),
-      new NotificationService(serverSupabase)
-    );
-
-    try {
-      await serverService.confirmBooking(params.bookingId, { ownerId: serverOwnerId });
-    } catch (error) {
-      const key = confirmationErrorKey(error);
-      redirect(`/app/bookings/${params.bookingId}?error=${key}`);
-    }
-
-    revalidatePath("/app/bookings");
-    revalidatePath(`/app/bookings/${params.bookingId}`);
-    revalidatePath("/app/calendar");
-    redirect(`/app/bookings/${params.bookingId}?message=confirmed`);
-  }
-
-  async function rejectBooking() {
-    "use server";
-
-    const serverSupabase = createSupabaseServerClient();
-    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
-    const serverService = new BookingService(
-      new SupabaseBookingRepository(serverSupabase),
-      new GoogleCalendarService(serverSupabase),
-      new NotificationService(serverSupabase)
-    );
-    await serverService.rejectBooking(params.bookingId, { ownerId: serverOwnerId });
-    revalidatePath("/app/bookings");
-    revalidatePath(`/app/bookings/${params.bookingId}`);
-    redirect(`/app/bookings/${params.bookingId}?message=rejected`);
-  }
-
-  async function cancelBooking() {
-    "use server";
-
-    const serverSupabase = createSupabaseServerClient();
-    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
-    const serverService = new BookingService(
-      new SupabaseBookingRepository(serverSupabase),
-      new GoogleCalendarService(serverSupabase),
-      new NotificationService(serverSupabase)
-    );
-    await serverService.cancelBooking(params.bookingId, { ownerId: serverOwnerId });
-    revalidatePath("/app/bookings");
-    revalidatePath(`/app/bookings/${params.bookingId}`);
-    revalidatePath("/app/calendar");
-    redirect(`/app/bookings/${params.bookingId}?message=cancelled`);
-  }
 
   async function retryCalendarSync() {
     "use server";
@@ -238,38 +181,7 @@ export default async function BookingDetailPage({
           </p>
         ) : null}
 
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          {booking.status === "pending" ? (
-            <>
-              <form action={confirmBooking}>
-                <p className="mb-2 text-xs text-ink/60">
-                  Confirma doar dupa ce ai verificat cererea oaspetelui.
-                </p>
-                <button className="button-primary w-full" type="submit">
-                  Confirma rezervarea
-                </button>
-              </form>
-              <form action={rejectBooking}>
-                <p className="mb-2 text-xs text-ink/60">
-                  Respingerea pastreaza istoricul, dar nu blocheaza camera.
-                </p>
-                <button className="button-secondary w-full" type="submit">
-                  Respinge rezervarea
-                </button>
-              </form>
-            </>
-          ) : null}
-          {booking.status === "pending" || booking.status === "confirmed" ? (
-            <form action={cancelBooking}>
-              <p className="mb-2 text-xs text-ink/60">
-                Anularea elibereaza intervalul pentru alte rezervari.
-              </p>
-              <button className="button-secondary w-full" type="submit">
-                Anuleaza rezervarea
-              </button>
-            </form>
-          ) : null}
-        </div>
+        <BookingActionButtons bookingId={booking.id} status={booking.status} />
       </section>
 
       <section className="panel">

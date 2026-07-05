@@ -523,7 +523,9 @@ describe("booking availability and transitions", () => {
     const cancelled = await service.cancelBooking(confirmed.id, { ownerId });
 
     expect(rejected.status).toBe("rejected");
+    expect(rejected.deleted_at).toBeNull();
     expect(cancelled.status).toBe("cancelled");
+    expect(cancelled.deleted_at).toBeNull();
   });
 
   it("cancelling keeps history and frees availability", async () => {
@@ -593,6 +595,34 @@ describe("booking availability and transitions", () => {
         { ownerId: otherOwnerId }
       )
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("forbids cross-owner booking actions without changing status", async () => {
+    const repo = repository();
+    const service = new BookingService(repo);
+    const pending = await service.createPendingBooking(validInput, { ownerId });
+    const confirmed = await service.createManualBooking(
+      { ...validInput, roomId: otherRoomId, startDate: "2026-08-10", endDate: "2026-08-12" },
+      { ownerId }
+    );
+
+    await expect(
+      service.confirmBooking(pending.id, { ownerId: otherOwnerId })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      service.rejectBooking(pending.id, { ownerId: otherOwnerId })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      service.cancelBooking(confirmed.id, { ownerId: otherOwnerId })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    expect((await service.getBooking(pending.id, { ownerId })).status).toBe("pending");
+    expect((await service.getBooking(confirmed.id, { ownerId })).status).toBe("confirmed");
+    expect(repo.bookingEvents).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ actor_owner_id: otherOwnerId })
+      ])
+    );
   });
 
   it("creates a Google Calendar event when confirming a pending booking", async () => {
