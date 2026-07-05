@@ -1,6 +1,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { RoomsList } from "@/components/rooms/rooms-list";
+import { buildRoomOccupancySummaries } from "@/domain/bookings/room-occupancy-summary";
+import { BookingService, RoomBlockService } from "@/domain/bookings/service";
+import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
 import { getPrimaryProperty } from "@/domain/properties/service";
 import {
   createRoom,
@@ -21,6 +24,18 @@ function getRoomPageMessage(messageKey?: string) {
   return null;
 }
 
+function todayInBucharest() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Bucharest",
+    year: "numeric"
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 export default async function RoomsPage({
   searchParams
 }: {
@@ -30,6 +45,23 @@ export default async function RoomsPage({
   const ownerId = await getCurrentOwnerId(supabase);
   const property = await getPrimaryProperty(supabase, ownerId);
   const rooms = property ? await listRooms(supabase, ownerId, property.id) : [];
+  const repository = new SupabaseBookingRepository(supabase);
+  const bookings = property
+    ? await new BookingService(repository).listBookings({ ownerId })
+    : [];
+  const roomBlocks = property
+    ? await new RoomBlockService(repository).listRoomBlocks({ ownerId })
+    : [];
+  const occupancySummaries = property
+    ? buildRoomOccupancySummaries({
+        rooms,
+        bookings,
+        roomBlocks,
+        today: todayInBucharest(),
+        checkInTime: property.check_in_time,
+        checkOutTime: property.check_out_time
+      })
+    : [];
 
   async function saveRoom(
     _state: RoomFormState,
@@ -104,6 +136,9 @@ export default async function RoomsPage({
     <RoomsList
       property={property}
       rooms={rooms}
+      occupancySummaries={occupancySummaries}
+      checkInTime={property?.check_in_time}
+      checkOutTime={property?.check_out_time}
       successMessage={getRoomPageMessage(searchParams?.message)}
       saveAction={saveRoom}
       deactivateAction={deactivate}
