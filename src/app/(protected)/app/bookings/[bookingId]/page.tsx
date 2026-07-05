@@ -2,9 +2,14 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { BookingActionButtons } from "@/components/bookings/booking-action-buttons";
+import {
+  bookingEventStatusLabels,
+  bookingHistoryDetails,
+  calendarStatusCopy,
+  shouldShowCalendarWarning
+} from "@/domain/bookings/detail-copy";
 import { BookingDomainError } from "@/domain/bookings/errors";
 import { BookingService } from "@/domain/bookings/service";
-import { bookingStatusLabels } from "@/domain/bookings/status-labels";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
 import type { BookingRecord } from "@/domain/bookings/types";
 import { GoogleCalendarService } from "@/domain/google-calendar/service";
@@ -16,13 +21,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 type SearchParams = {
   error?: string;
   message?: string;
-};
-
-const eventLabels: Record<string, string> = {
-  booking_created: "Rezervare creata",
-  booking_confirmed: "Rezervare confirmata",
-  booking_rejected: "Rezervare respinsa",
-  booking_cancelled: "Rezervare anulata"
 };
 
 function pageMessage(key?: string) {
@@ -88,13 +86,7 @@ export default async function BookingDetailPage({
     redirect(`/app/bookings/${params.bookingId}`);
   }
 
-  const syncLabels: Record<BookingRecord["calendar_sync_status"], string> = {
-    not_required: "Nu este necesar",
-    pending: "In asteptare",
-    synced: "Sincronizat",
-    failed: "Sincronizare esuata",
-    needs_reconnect: "Necesita reconectare"
-  };
+  const calendarCopy = calendarStatusCopy(booking);
   const successMessage = pageMessage(searchParams?.message);
   const errorMessage = pageError(searchParams?.error);
 
@@ -124,7 +116,7 @@ export default async function BookingDetailPage({
             </p>
           </div>
           <span className="w-fit rounded-md border border-line px-2 py-1 text-xs font-semibold">
-            {bookingStatusLabels[booking.status]}
+            {bookingEventStatusLabels[booking.status]}
           </span>
         </div>
 
@@ -148,13 +140,17 @@ export default async function BookingDetailPage({
           <div>
             <dt className="text-ink/60">Calendar</dt>
             <dd className="font-medium">
-              {syncLabels[booking.calendar_sync_status]}
+              {calendarCopy.label}
+              {calendarCopy.message ? (
+                <p className="mt-1 text-xs font-normal text-ink/60">
+                  {calendarCopy.message}
+                </p>
+              ) : null}
             </dd>
           </div>
         </dl>
 
-        {booking.calendar_sync_status === "failed" ||
-        booking.calendar_sync_status === "needs_reconnect" ? (
+        {shouldShowCalendarWarning(booking) ? (
           <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             <p>
               {ownerSafeGoogleCalendarMessage(booking.calendar_sync_error_code)}
@@ -186,15 +182,51 @@ export default async function BookingDetailPage({
 
       <section className="panel">
         <h2 className="text-lg font-semibold">Istoric</h2>
-        <ul className="mt-3 space-y-2 text-sm">
-          {events.map((event) => (
-            <li className="rounded-md border border-line p-3" key={event.id}>
-              <p className="font-medium">
-                {eventLabels[event.event_type] ?? event.event_type}
-              </p>
-              <p className="text-ink/60">{event.created_at}</p>
-            </li>
-          ))}
+        <ul className="mt-3 space-y-3 text-sm">
+          {events.map((event) => {
+            const details = bookingHistoryDetails(booking, event);
+
+            return (
+              <li
+                className="rounded-md border border-line p-3"
+                id={`event-${event.id}`}
+                key={event.id}
+              >
+                <a className="block" href={`#event-${event.id}`}>
+                  <p className="font-semibold">{details.actionLabel}</p>
+                  <p className="mt-1 text-ink/60">{details.occurredAt}</p>
+                  <dl className="mt-3 grid gap-2">
+                    <div>
+                      <dt className="text-ink/60">Client</dt>
+                      <dd className="font-medium">{details.guestName}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-ink/60">Perioadă</dt>
+                      <dd className="font-medium">{details.stayPeriod}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-ink/60">Oaspeți</dt>
+                      <dd className="font-medium">{details.guestsCount}</dd>
+                    </div>
+                    {details.phone ? (
+                      <div>
+                        <dt className="text-ink/60">Telefon</dt>
+                        <dd className="font-medium">{details.phone}</dd>
+                      </div>
+                    ) : null}
+                    <div>
+                      <dt className="text-ink/60">Email</dt>
+                      <dd className="font-medium">{details.email}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-ink/60">Status rezultat</dt>
+                      <dd className="font-medium">{details.statusLabel}</dd>
+                    </div>
+                  </dl>
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </section>
     </div>
