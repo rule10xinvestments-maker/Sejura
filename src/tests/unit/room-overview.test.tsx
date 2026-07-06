@@ -150,6 +150,32 @@ describe("RoomOverview", () => {
     expect(screen.getByText("Indisponibilă acum")).toBeVisible();
   });
 
+  it("renders summary cards as quick action links to the relevant sections", () => {
+    renderOverview();
+
+    expect(
+      screen.getByRole("link", { name: /Vezi toate camerele/ })
+    ).toHaveAttribute("href", "/app/rooms");
+    expect(
+      screen.getByRole("link", { name: /Vezi camerele libere/ })
+    ).toHaveAttribute("href", "#camere-libere");
+    expect(
+      screen.getByRole("link", { name: /Vezi camerele ocupate/ })
+    ).toHaveAttribute("href", "#camere-ocupate");
+    expect(
+      screen.getByRole("link", { name: /Vezi cererile în așteptare/ })
+    ).toHaveAttribute("href", "#cereri-in-asteptare");
+    expect(
+      screen.getByRole("heading", { name: "Camere libere" }).parentElement
+    ).toHaveAttribute("id", "camere-libere");
+    expect(
+      screen.getByRole("heading", { name: "Camere ocupate" }).parentElement
+    ).toHaveAttribute("id", "camere-ocupate");
+    expect(
+      screen.getByRole("heading", { name: "Cereri în așteptare" }).parentElement
+    ).toHaveAttribute("id", "cereri-in-asteptare");
+  });
+
   it("shows occupied room guest, period, release date, contact, and booking link", () => {
     renderOverview();
 

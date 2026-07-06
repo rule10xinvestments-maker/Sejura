@@ -24,6 +24,32 @@ function roomPriceCopy(room: Room) {
   return `${priceFormatter.format(room.base_price_per_night)}/noapte`;
 }
 
+function SummaryCard({
+  label,
+  value,
+  action,
+  href
+}: {
+  label: string;
+  value: number;
+  action: string;
+  href: string;
+}) {
+  return (
+    <div>
+      <Link
+        aria-label={`${action}: ${value}`}
+        className="block min-h-28 rounded-md border border-line bg-white p-3 transition hover:border-clay hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-clay/30"
+        href={href}
+      >
+        <dt className="text-xs font-semibold uppercase text-ink/55">{label}</dt>
+        <dd className="mt-1 text-2xl font-bold">{value}</dd>
+        <span className="mt-3 block text-sm font-semibold text-clay">{action}</span>
+      </Link>
+    </div>
+  );
+}
+
 export function RoomOverview({
   rooms,
   occupancySummaries,
@@ -58,22 +84,30 @@ export function RoomOverview({
       </div>
 
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div className="rounded-md border border-line bg-white p-3">
-          <dt className="text-xs font-semibold uppercase text-ink/55">Camere active</dt>
-          <dd className="mt-1 text-2xl font-bold">{activeRooms.length}</dd>
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <dt className="text-xs font-semibold uppercase text-ink/55">Camere libere</dt>
-          <dd className="mt-1 text-2xl font-bold">{freeRooms.length}</dd>
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <dt className="text-xs font-semibold uppercase text-ink/55">Camere ocupate</dt>
-          <dd className="mt-1 text-2xl font-bold">{occupiedRooms.length}</dd>
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <dt className="text-xs font-semibold uppercase text-ink/55">Cereri în așteptare</dt>
-          <dd className="mt-1 text-2xl font-bold">{pendingRequests.length}</dd>
-        </div>
+        <SummaryCard
+          action="Vezi toate camerele"
+          href="/app/rooms"
+          label="Camere active"
+          value={activeRooms.length}
+        />
+        <SummaryCard
+          action="Vezi camerele libere"
+          href="#camere-libere"
+          label="Camere libere"
+          value={freeRooms.length}
+        />
+        <SummaryCard
+          action="Vezi camerele ocupate"
+          href="#camere-ocupate"
+          label="Camere ocupate"
+          value={occupiedRooms.length}
+        />
+        <SummaryCard
+          action="Vezi cererile în așteptare"
+          href="#cereri-in-asteptare"
+          label="Cereri în așteptare"
+          value={pendingRequests.length}
+        />
       </dl>
 
       {blockedRooms.length > 0 ? (
@@ -98,7 +132,10 @@ export function RoomOverview({
       ) : null}
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-md border border-line bg-mist/40 p-3">
+        <div
+          className="scroll-mt-24 rounded-md border border-line bg-mist/40 p-3"
+          id="camere-libere"
+        >
           <h3 className="font-semibold">Camere libere</h3>
           {freeRooms.length > 0 ? (
             <ul className="mt-3 grid gap-3">
@@ -149,7 +186,10 @@ export function RoomOverview({
           )}
         </div>
 
-        <div className="rounded-md border border-line bg-mist/40 p-3">
+        <div
+          className="scroll-mt-24 rounded-md border border-line bg-mist/40 p-3"
+          id="camere-ocupate"
+        >
           <h3 className="font-semibold">Camere ocupate</h3>
           {occupiedRooms.length > 0 ? (
             <ul className="mt-3 grid gap-3">
@@ -191,7 +231,10 @@ export function RoomOverview({
         </div>
       </div>
 
-      <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-950">
+      <div
+        className="scroll-mt-24 rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-950"
+        id="cereri-in-asteptare"
+      >
         <h3 className="font-semibold">Cereri în așteptare</h3>
         {pendingRequests.length > 0 ? (
           <ul className="mt-3 grid gap-3">
