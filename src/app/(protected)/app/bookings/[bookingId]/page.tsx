@@ -55,8 +55,9 @@ export default async function BookingDetailPage({
 }) {
   const supabase = createSupabaseServerClient();
   const ownerId = await getCurrentOwnerId(supabase);
+  const repository = new SupabaseBookingRepository(supabase);
   const service = new BookingService(
-    new SupabaseBookingRepository(supabase),
+    repository,
     new GoogleCalendarService(supabase),
     new NotificationService(supabase)
   );
@@ -72,6 +73,8 @@ export default async function BookingDetailPage({
   }
 
   const events = await service.getBookingEvents(params.bookingId, { ownerId });
+  const settings = await repository.getPropertySettings(ownerId, booking.property_id);
+  const property = await repository.getProperty(ownerId, booking.property_id);
 
   async function retryCalendarSync() {
     "use server";
@@ -86,7 +89,10 @@ export default async function BookingDetailPage({
     redirect(`/app/bookings/${params.bookingId}`);
   }
 
-  const calendarCopy = calendarStatusCopy(booking);
+  const calendarCopy = calendarStatusCopy(booking, {
+    calendarRequiredForConfirmation:
+      settings?.calendar_required_for_confirmation ?? false
+  });
   const successMessage = pageMessage(searchParams?.message);
   const errorMessage = pageError(searchParams?.error);
 
@@ -150,7 +156,10 @@ export default async function BookingDetailPage({
           </div>
         </dl>
 
-        {shouldShowCalendarWarning(booking) ? (
+        {shouldShowCalendarWarning(booking, {
+          calendarRequiredForConfirmation:
+            settings?.calendar_required_for_confirmation ?? false
+        }) ? (
           <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             <p>
               {ownerSafeGoogleCalendarMessage(booking.calendar_sync_error_code)}
@@ -177,7 +186,11 @@ export default async function BookingDetailPage({
           </p>
         ) : null}
 
-        <BookingActionButtons bookingId={booking.id} status={booking.status} />
+        <BookingActionButtons
+          bookingId={booking.id}
+          checkOutTime={property?.check_out_time}
+          status={booking.status}
+        />
       </section>
 
       <section className="panel">

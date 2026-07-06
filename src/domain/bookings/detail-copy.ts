@@ -30,6 +30,21 @@ export const bookingEventStatusLabels: Record<BookingRecord["status"], string> =
   rejected: "Respinsă"
 };
 
+type CalendarCopyOptions = {
+  calendarRequiredForConfirmation?: boolean;
+};
+
+type CalendarStatusCopy = {
+  label: string;
+  message?: string;
+};
+
+const internalCalendarCopy = {
+  label: "Calendar Sejura activ",
+  message:
+    "Rezervările sunt gestionate în calendarul intern Sejura. Google Calendar poate fi conectat ulterior din setări."
+};
+
 export function formatRomanianDateTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -47,35 +62,27 @@ export function formatRomanianStayPeriod(startDate: string, endDate: string) {
   )}`;
 }
 
-export function calendarStatusCopy(booking: BookingRecord) {
-  if (booking.calendar_sync_status === "not_required") {
-    if (booking.status === "pending") {
-      return {
-        label: "Google Calendar neconectat",
-        message:
-          "Rezervarea poate fi confirmată în Sejura. Google Calendar nu este conectat încă."
-      };
-    }
+function isOptionalDisconnectedCalendar(
+  booking: BookingRecord,
+  options: CalendarCopyOptions
+) {
+  if (options.calendarRequiredForConfirmation) return false;
 
-    if (booking.status === "confirmed") {
-      return {
-        label: "Confirmată în Sejura",
-        message:
-          "Rezervarea este confirmată intern. Google Calendar nu este conectat."
-      };
-    }
-  }
+  return (
+    booking.calendar_sync_status === "not_required" ||
+    ((booking.calendar_sync_status === "failed" ||
+      booking.calendar_sync_status === "needs_reconnect") &&
+      (booking.calendar_sync_error_code === "GOOGLE_CALENDAR_DISCONNECTED" ||
+        booking.calendar_sync_error_code === "GOOGLE_RECONNECT_REQUIRED"))
+  );
+}
 
-  if (
-    booking.status === "confirmed" &&
-    booking.calendar_sync_status === "failed" &&
-    booking.calendar_sync_error_code === "GOOGLE_CALENDAR_DISCONNECTED"
-  ) {
-    return {
-      label: "Confirmată în Sejura",
-      message:
-        "Rezervarea este confirmată intern. Google Calendar nu este conectat."
-    };
+export function calendarStatusCopy(
+  booking: BookingRecord,
+  options: CalendarCopyOptions = {}
+): CalendarStatusCopy {
+  if (isOptionalDisconnectedCalendar(booking, options)) {
+    return internalCalendarCopy;
   }
 
   const syncLabels: Record<BookingRecord["calendar_sync_status"], string> = {
@@ -89,12 +96,11 @@ export function calendarStatusCopy(booking: BookingRecord) {
   return { label: syncLabels[booking.calendar_sync_status] };
 }
 
-export function shouldShowCalendarWarning(booking: BookingRecord) {
-  if (
-    booking.status === "confirmed" &&
-    booking.calendar_sync_status === "failed" &&
-    booking.calendar_sync_error_code === "GOOGLE_CALENDAR_DISCONNECTED"
-  ) {
+export function shouldShowCalendarWarning(
+  booking: BookingRecord,
+  options: CalendarCopyOptions = {}
+) {
+  if (isOptionalDisconnectedCalendar(booking, options)) {
     return false;
   }
 

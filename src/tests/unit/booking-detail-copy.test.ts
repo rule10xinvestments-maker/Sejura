@@ -84,18 +84,19 @@ describe("booking detail owner copy", () => {
     expect(details.occurredAt).not.toContain("2026-07-05T10:31:00.000Z");
   });
 
-  it("shows disconnected calendar copy without failed wording when sync is not required", () => {
+  it("shows internal Sejura calendar copy when optional Google Calendar is disconnected", () => {
     expect(
       calendarStatusCopy(
         booking({
           status: "pending",
           calendar_sync_status: "not_required"
-        })
+        }),
+        { calendarRequiredForConfirmation: false }
       )
     ).toEqual({
-      label: "Google Calendar neconectat",
+      label: "Calendar Sejura activ",
       message:
-        "Rezervarea poate fi confirmată în Sejura. Google Calendar nu este conectat încă."
+        "Rezervările sunt gestionate în calendarul intern Sejura. Google Calendar poate fi conectat ulterior din setări."
     });
 
     const confirmedDisconnected = booking({
@@ -104,15 +105,25 @@ describe("booking detail owner copy", () => {
       calendar_sync_error_code: "GOOGLE_CALENDAR_DISCONNECTED"
     });
 
-    expect(calendarStatusCopy(confirmedDisconnected)).toEqual({
-      label: "Confirmată în Sejura",
+    expect(
+      calendarStatusCopy(confirmedDisconnected, {
+        calendarRequiredForConfirmation: false
+      })
+    ).toEqual({
+      label: "Calendar Sejura activ",
       message:
-        "Rezervarea este confirmată intern. Google Calendar nu este conectat."
+        "Rezervările sunt gestionate în calendarul intern Sejura. Google Calendar poate fi conectat ulterior din setări."
     });
-    expect(calendarStatusCopy(confirmedDisconnected).label).not.toContain(
-      "Sincronizare eșuată"
-    );
-    expect(shouldShowCalendarWarning(confirmedDisconnected)).toBe(false);
+    expect(
+      calendarStatusCopy(confirmedDisconnected, {
+        calendarRequiredForConfirmation: false
+      }).label
+    ).not.toContain("Sincronizare eșuată");
+    expect(
+      shouldShowCalendarWarning(confirmedDisconnected, {
+        calendarRequiredForConfirmation: false
+      })
+    ).toBe(false);
   });
 
   it("keeps failed sync wording for real non-disconnected sync failures", () => {

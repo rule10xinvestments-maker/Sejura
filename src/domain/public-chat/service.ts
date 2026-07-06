@@ -364,6 +364,12 @@ type BookingDraftRoom = {
   currency: string;
 };
 
+type NearbyPeriodSuggestion = {
+  start_date: string;
+  end_date: string;
+  available_rooms: BookingDraftRoom[];
+};
+
 type BookingDraft = {
   start_date: string;
   end_date: string;
@@ -534,6 +540,8 @@ function recomputeEstimatedTotal(draft: BookingDraft) {
 
 type AvailabilityToolOutput = {
   available_rooms: BookingDraftRoom[];
+  alternative_rooms?: BookingDraftRoom[];
+  nearby_periods?: NearbyPeriodSuggestion[];
   unavailable_reason?: string;
 };
 
@@ -557,6 +565,30 @@ function asAvailabilityToolOutput(output: Json): AvailabilityToolOutput {
   }
 
   return output as AvailabilityToolOutput;
+}
+
+function addDays(dateOnly: string, days: number) {
+  const date = new Date(`${dateOnly}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatAvailableRoomLines(rooms: BookingDraftRoom[]) {
+  return rooms
+    .map(
+      (room) =>
+        `- ${room.name}: pana la ${room.max_guests} persoane, ${room.total_estimated_price} ${room.currency} total estimat`
+    )
+    .join("\n");
+}
+
+function formatNearbyPeriodLines(periods: NearbyPeriodSuggestion[]) {
+  return periods
+    .map((period) => {
+      const roomNames = period.available_rooms.map((room) => room.name).join(", ");
+      return `- ${period.start_date} - ${period.end_date}: ${roomNames}`;
+    })
+    .join("\n");
 }
 
 function asPropertyInfo(output: Json) {
@@ -714,7 +746,8 @@ export class AiReceptionistService {
     const preferredRoomId = input.preferred_room_id
       ? String(input.preferred_room_id)
       : null;
-    const rooms = asListRoomsToolOutput(
+    const includeAlternatives = input.include_alternatives !== false;
+    const allRooms = asListRoomsToolOutput(
       await this.executeToolCall(
         "list_rooms",
         {
@@ -723,43 +756,96 @@ export class AiReceptionistService {
         },
         conversation
       )
-    ).rooms.filter((room) => (preferredRoomId ? room.room_id === preferredRoomId : true));
+    ).rooms;
+    const rooms = allRooms.filter((room) =>
+      preferredRoomId ? room.room_id === preferredRoomId : true
+    );
     const availability = new AvailabilityService(
       new SupabaseBookingRepository(this.supabase)
     );
-    const availableRooms = [];
+    const availableRooms: BookingDraftRoom[] = [];
 
-    for (const room of rooms) {
-      const result = await availability.checkAvailability(
-        {
-          propertyId: conversation.property_id,
-          roomId: room.room_id,
-          startDate,
-          endDate,
-          guestsCount
-        },
-        { ownerId: conversation.owner_id, actorType: "guest" }
-      );
-      if (result.available) {
-        availableRooms.push({
-          room_id: room.room_id,
-          name: room.name,
-          max_guests: room.max_guests,
-          price_per_night: room.base_price_per_night,
-          nights_count: result.nightsCount,
-          total_estimated_price:
-            typeof room.base_price_per_night === "number"
-              ? room.base_price_per_night * result.nightsCount
-              : null,
-          currency: "RON"
-        });
+    async function availableRoomsFor(
+      candidateRooms: typeof allRooms,
+      candidateStartDate: string,
+      candidateEndDate: string
+    ) {
+      const results: BookingDraftRoom[] = [];
+
+      for (const room of candidateRooms) {
+        const result = await availability.checkAvailability(
+          {
+            propertyId: conversation.property_id,
+            roomId: room.room_id,
+            startDate: candidateStartDate,
+            endDate: candidateEndDate,
+            guestsCount
+          },
+          { ownerId: conversation.owner_id, actorType: "guest" }
+        );
+        if (result.available) {
+          results.push({
+            room_id: room.room_id,
+            name: room.name,
+            max_guests: room.max_guests,
+            price_per_night: room.base_price_per_night,
+            nights_count: result.nightsCount,
+            total_estimated_price:
+              typeof room.base_price_per_night === "number"
+                ? room.base_price_per_night * result.nightsCount
+                : null,
+            currency: "RON"
+          });
+        }
+      }
+
+      return results;
+    }
+
+    availableRooms.push(...(await availableRoomsFor(rooms, startDate, endDate)));
+
+    const alternativeRooms =
+      includeAlternatives && preferredRoomId && availableRooms.length === 0
+        ? await availableRoomsFor(
+            allRooms.filter((room) => room.room_id !== preferredRoomId),
+            startDate,
+            endDate
+          )
+        : [];
+
+    const nearbyPeriods: NearbyPeriodSuggestion[] = [];
+    if (
+      includeAlternatives &&
+      availableRooms.length === 0 &&
+      alternativeRooms.length === 0
+    ) {
+      const nightsCount = getNightsCount(startDate, endDate);
+      for (const offset of [-14, -7, -3, 3, 7, 14]) {
+        const nearbyStartDate = addDays(startDate, offset);
+        const nearbyEndDate = addDays(nearbyStartDate, nightsCount);
+        const roomsForPeriod = await availableRoomsFor(
+          preferredRoomId ? allRooms : allRooms,
+          nearbyStartDate,
+          nearbyEndDate
+        );
+        if (roomsForPeriod.length > 0) {
+          nearbyPeriods.push({
+            start_date: nearbyStartDate,
+            end_date: nearbyEndDate,
+            available_rooms: roomsForPeriod
+          });
+        }
       }
     }
 
     return {
       available_rooms: availableRooms,
+      alternative_rooms: alternativeRooms,
+      nearby_periods: nearbyPeriods.slice(0, 3),
       unavailable_reason:
-        availableRooms.length === 0 ? "Nu exista camere disponibile." : undefined
+        availableRooms.length === 0 && alternativeRooms.length === 0
+          ? "Nu exista camere disponibile."
+          : undefined
     };
   }
 
@@ -780,7 +866,8 @@ export class AiReceptionistService {
       preferred_room_id: roomId,
       start_date: input.start_date,
       end_date: input.end_date,
-      guests_count: input.guests_count
+      guests_count: input.guests_count,
+      include_alternatives: false
     });
     if (availability.available_rooms.length === 0) {
       throw new PublicChatError("ROOM_NOT_AVAILABLE", "Camera nu este disponibila.");
@@ -924,9 +1011,27 @@ export class AiReceptionistService {
       );
 
       if (availability.available_rooms.length === 0) {
+        if (availability.alternative_rooms?.length) {
+          return [
+            "Camera cerută nu este disponibilă în perioada aleasă.",
+            "Pot să îți ofer aceste variante disponibile:",
+            formatAvailableRoomLines(availability.alternative_rooms),
+            "Dacă ești flexibil cu datele, pot verifica și perioade apropiate."
+          ].join("\n");
+        }
+
+        if (availability.nearby_periods?.length) {
+          return [
+            "Camera cerută nu este disponibilă în perioada aleasă.",
+            "Nu am găsit camere libere exact atunci, dar pot să îți ofer perioade apropiate:",
+            formatNearbyPeriodLines(availability.nearby_periods),
+            "Dacă ești flexibil cu datele, pot verifica și alte perioade apropiate."
+          ].join("\n");
+        }
+
         return language === "en"
           ? "I checked availability and there are no available rooms for that period. I can check another period."
-          : "Am verificat disponibilitatea si nu sunt camere disponibile pentru perioada aleasa. Pot verifica o alta perioada.";
+          : "Camera cerută nu este disponibilă în perioada aleasă. Dacă ești flexibil cu datele, pot verifica și perioade apropiate.";
       }
 
       await this.saveBookingDraft(conversation, {
@@ -943,12 +1048,7 @@ export class AiReceptionistService {
         awaiting: "room_selection"
       });
 
-      const roomLines = availability.available_rooms
-        .map(
-          (room) =>
-            `- ${room.name}: pana la ${room.max_guests} persoane, ${room.total_estimated_price} ${room.currency} total estimat`
-        )
-        .join("\n");
+      const roomLines = formatAvailableRoomLines(availability.available_rooms);
 
       return [
         `Am verificat disponibilitatea pentru ${parsed.start_date} - ${parsed.end_date}, ${parsed.guests_count} persoane.`,

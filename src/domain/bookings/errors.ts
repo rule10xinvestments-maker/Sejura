@@ -8,7 +8,8 @@ export type BookingErrorCode =
 export class BookingDomainError extends Error {
   constructor(
     public code: BookingErrorCode,
-    message: string
+    message: string,
+    public details?: Record<string, unknown>
   ) {
     super(message);
   }

@@ -64,6 +64,7 @@ function createAiBookingFlowSupabase(options?: {
   notificationInsertFails?: boolean;
   rooms?: Row[];
   bookings?: Row[];
+  roomBlocks?: Row[];
 }) {
   const context = propertyContext();
   const room = {
@@ -102,7 +103,7 @@ function createAiBookingFlowSupabase(options?: {
     rooms,
     bookings: options?.bookings ?? [],
     booking_events: [],
-    room_blocks: [],
+    room_blocks: options?.roomBlocks ?? [],
     owner_notifications: [],
     audit_logs: []
   };
@@ -286,8 +287,26 @@ function pilotBooking(patch: Row): Row {
   };
 }
 
+function pilotRoomBlock(patch: Row): Row {
+  return {
+    id: "block-1",
+    owner_id: "owner-1",
+    property_id: "property-1",
+    room_id: "room-family",
+    start_date: "2026-12-03",
+    end_date: "2026-12-15",
+    reason: "Mentenanta",
+    created_by_owner_id: "owner-1",
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    deleted_at: null,
+    ...patch
+  };
+}
+
 function createPilotAvailabilitySupabase(options?: {
   bookings?: Row[];
+  roomBlocks?: Row[];
 }) {
   return createAiBookingFlowSupabase({
     rooms: [
@@ -296,7 +315,8 @@ function createPilotAvailabilitySupabase(options?: {
       pilotRoom("room-triple-1", "Camera Tripla 1", 3, 320),
       pilotRoom("room-family", "Apartament Familie", 4, 450)
     ],
-    bookings: options?.bookings
+    bookings: options?.bookings,
+    roomBlocks: options?.roomBlocks
   });
 }
 
@@ -832,6 +852,173 @@ describe("public chat runtime safety", () => {
     });
   });
 
+  it("offers other available rooms for the same interval without private conflict details", async () => {
+    const fake = createPilotAvailabilitySupabase({
+      bookings: [
+        pilotBooking({
+          id: "confirmed-camera-dubla-2",
+          room_id: "room-double-2",
+          guest_name: "Client Privat",
+          guest_phone: "0799999999",
+          status: "confirmed",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        })
+      ]
+    });
+    const output = await new AiReceptionistService(fake.client).executeToolCall(
+      "check_availability",
+      {
+        start_date: "2026-12-03",
+        end_date: "2026-12-15",
+        guests_count: 2,
+        preferred_room_id: "room-double-2"
+      },
+      fake.rows.conversations[0] as never
+    );
+
+    expect(output).toMatchObject({
+      available_rooms: [],
+      alternative_rooms: expect.arrayContaining([
+        expect.objectContaining({ room_id: "room-double-1" }),
+        expect.objectContaining({ room_id: "room-triple-1" })
+      ])
+    });
+    expect(JSON.stringify(output)).not.toContain("Client Privat");
+    expect(JSON.stringify(output)).not.toContain("0799999999");
+  });
+
+  it("suggests nearby dates without including occupied intervals", async () => {
+    const fake = createPilotAvailabilitySupabase({
+      bookings: [
+        pilotBooking({
+          id: "confirmed-double-1",
+          room_id: "room-double-1",
+          status: "confirmed",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        }),
+        pilotBooking({
+          id: "confirmed-double-2",
+          room_id: "room-double-2",
+          status: "confirmed",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        }),
+        pilotBooking({
+          id: "confirmed-triple",
+          room_id: "room-triple-1",
+          status: "confirmed",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        }),
+        pilotBooking({
+          id: "confirmed-family",
+          room_id: "room-family",
+          status: "confirmed",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        })
+      ]
+    });
+    const output = await new AiReceptionistService(fake.client).executeToolCall(
+      "check_availability",
+      {
+        start_date: "2026-12-03",
+        end_date: "2026-12-15",
+        guests_count: 2
+      },
+      fake.rows.conversations[0] as never
+    );
+
+    expect(output).toMatchObject({
+      available_rooms: [],
+      nearby_periods: expect.arrayContaining([
+        expect.objectContaining({
+          start_date: expect.not.stringMatching("2026-12-03"),
+          available_rooms: expect.arrayContaining([
+            expect.objectContaining({ room_id: "room-double-1" })
+          ])
+        })
+      ])
+    });
+  });
+
+  it("uses confirmed bookings and room blocks to block alternatives", async () => {
+    const fake = createPilotAvailabilitySupabase({
+      bookings: [
+        pilotBooking({
+          id: "confirmed-double-2",
+          room_id: "room-double-2",
+          status: "confirmed",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        })
+      ],
+      roomBlocks: [
+        pilotRoomBlock({
+          id: "blocked-family",
+          room_id: "room-family",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        })
+      ]
+    });
+    const output = await new AiReceptionistService(fake.client).executeToolCall(
+      "check_availability",
+      {
+        start_date: "2026-12-03",
+        end_date: "2026-12-15",
+        guests_count: 2
+      },
+      fake.rows.conversations[0] as never
+    );
+
+    expect(output).toMatchObject({
+      available_rooms: expect.not.arrayContaining([
+        expect.objectContaining({ room_id: "room-double-2" }),
+        expect.objectContaining({ room_id: "room-family" })
+      ])
+    });
+  });
+
+  it("ignores cancelled and rejected bookings for alternatives", async () => {
+    const fake = createPilotAvailabilitySupabase({
+      bookings: [
+        pilotBooking({
+          id: "cancelled-double-2",
+          room_id: "room-double-2",
+          status: "cancelled",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        }),
+        pilotBooking({
+          id: "rejected-family",
+          room_id: "room-family",
+          status: "rejected",
+          start_date: "2026-12-03",
+          end_date: "2026-12-15"
+        })
+      ]
+    });
+    const output = await new AiReceptionistService(fake.client).executeToolCall(
+      "check_availability",
+      {
+        start_date: "2026-12-03",
+        end_date: "2026-12-15",
+        guests_count: 2
+      },
+      fake.rows.conversations[0] as never
+    );
+
+    expect(output).toMatchObject({
+      available_rooms: expect.arrayContaining([
+        expect.objectContaining({ room_id: "room-double-2" }),
+        expect.objectContaining({ room_id: "room-family" })
+      ])
+    });
+  });
+
   it("rejects choosing a confirmed-blocked room outside the last availability result without creating a booking", async () => {
     const fake = createPilotAvailabilitySupabase({
       bookings: [
@@ -947,7 +1134,8 @@ describe("public chat runtime safety", () => {
     );
     delete process.env.OPENAI_API_KEY;
 
-    expect(result.message).toContain("nu sunt camere disponibile");
+    expect(result.message).toContain("Camera cerută nu este disponibilă");
+    expect(result.message).toContain("perioade apropiate");
     expect(result.message).not.toContain("Camera mica");
     expect(result.message).not.toContain("180");
     expect(fake.rows.bookings).toHaveLength(0);

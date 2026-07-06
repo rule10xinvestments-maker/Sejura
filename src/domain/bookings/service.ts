@@ -116,7 +116,8 @@ export class AvailabilityService {
     return {
       available: reasons.length === 0,
       nightsCount,
-      reasons
+      reasons,
+      conflicts: blockingBookings
     };
   }
 }
@@ -205,7 +206,13 @@ export class BookingService {
       authContext
     ).then((availability) => {
       if (!availability.available) {
-        throw new BookingDomainError("NOT_AVAILABLE", availability.reasons[0]);
+        throw new BookingDomainError(
+          "NOT_AVAILABLE",
+          availability.reasons[0],
+          availability.conflicts[0]
+            ? { conflict: availability.conflicts[0] }
+            : undefined
+        );
       }
     });
 

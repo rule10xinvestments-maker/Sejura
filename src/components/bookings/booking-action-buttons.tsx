@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { BookingRecord } from "@/domain/bookings/types";
@@ -9,12 +10,22 @@ type BookingAction = "confirm" | "reject" | "cancel";
 type BookingActionButtonsProps = {
   bookingId: string;
   status: BookingRecord["status"];
+  checkOutTime?: string | null;
 };
 
 type BookingActionError = {
   code?: string;
   error?: string;
+  conflict?: {
+    bookingId: string;
+    guestName: string;
+    guestPhone: string | null;
+    startDate: string;
+    endDate: string;
+  };
 };
+
+type BookingConflictDetail = NonNullable<BookingActionError["conflict"]>;
 
 const successMessages: Record<BookingAction, string> = {
   confirm: "confirmed",
@@ -59,16 +70,19 @@ function ownerSafeError(
 
 export function BookingActionButtons({
   bookingId,
-  status
+  status,
+  checkOutTime
 }: BookingActionButtonsProps) {
   const router = useRouter();
   const [pendingAction, setPendingAction] = useState<BookingAction | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState<BookingConflictDetail | null>(null);
 
   async function runAction(action: BookingAction) {
     if (pendingAction) return;
 
     setError(null);
+    setConflict(null);
     setPendingAction(action);
 
     try {
@@ -81,6 +95,7 @@ export function BookingActionButtons({
           | BookingActionError
           | undefined;
         setError(ownerSafeError(action, response.status, body));
+        setConflict(body?.code === "ROOM_NOT_AVAILABLE" ? body.conflict ?? null : null);
         return;
       }
 
@@ -98,12 +113,31 @@ export function BookingActionButtons({
   return (
     <div className="mt-5">
       {error ? (
-        <p
+        <div
           aria-live="polite"
           className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
         >
-          {error}
-        </p>
+          <p>{error}</p>
+          {conflict ? (
+            <div className="mt-3 space-y-1 text-red-900">
+              <p>Camera este deja ocupată de {conflict.guestName}.</p>
+              <p>
+                Perioadă: {conflict.startDate} – {conflict.endDate}
+              </p>
+              <p>
+                Se eliberează: {conflict.endDate}
+                {checkOutTime ? ` la ${checkOutTime}` : ""}
+              </p>
+              {conflict.guestPhone ? <p>Telefon: {conflict.guestPhone}</p> : null}
+              <a
+                className="inline-block font-semibold underline"
+                href={`/app/bookings/${conflict.bookingId}`}
+              >
+                Vezi rezervarea existentă
+              </a>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="flex flex-col gap-2 sm:flex-row">
