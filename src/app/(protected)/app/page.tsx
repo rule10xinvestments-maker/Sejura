@@ -1,4 +1,9 @@
 import Link from "next/link";
+import { RoomOverview } from "@/components/dashboard/room-overview";
+import {
+  buildRoomOccupancySummaries,
+  todayInBucharest
+} from "@/domain/bookings/room-occupancy-summary";
 import { loadDashboardData } from "@/domain/dashboard/service";
 import { getCurrentOwnerId } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -10,10 +15,21 @@ export default async function DashboardPage() {
     property,
     rooms,
     bookings,
+    roomBlocks,
     googleConnection,
     notifications,
     activation
   } = await loadDashboardData(supabase, ownerId);
+  const occupancySummaries = property
+    ? buildRoomOccupancySummaries({
+        rooms,
+        bookings,
+        roomBlocks,
+        today: todayInBucharest(),
+        checkInTime: property.check_in_time,
+        checkOutTime: property.check_out_time
+      })
+    : [];
   const confirmedBookings = bookings.filter(
     (booking) => booking.status === "confirmed"
   ).length;
@@ -92,6 +108,15 @@ export default async function DashboardPage() {
           <p className="mt-2 text-xl font-bold">{notifications.unreadCount}</p>
         </div>
       </section>
+
+      {property ? (
+        <RoomOverview
+          rooms={rooms}
+          occupancySummaries={occupancySummaries}
+          checkInTime={property.check_in_time}
+          checkOutTime={property.check_out_time}
+        />
+      ) : null}
 
       {googleConnection?.status === "needs_reconnect" ||
       googleConnection?.status === "error" ? (

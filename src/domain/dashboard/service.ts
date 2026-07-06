@@ -1,5 +1,5 @@
 import { getActivationStatus } from "@/domain/activation/service";
-import { BookingService } from "@/domain/bookings/service";
+import { BookingService, RoomBlockService } from "@/domain/bookings/service";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
 import { GoogleCalendarService } from "@/domain/google-calendar/service";
 import { getPrimaryProperty } from "@/domain/properties/service";
@@ -147,6 +147,18 @@ export async function loadDashboardData(
     logger
   );
 
+  const roomBlocks = property
+    ? await safeLoad(
+        [],
+        "room blocks failed",
+        () =>
+          new RoomBlockService(new SupabaseBookingRepository(supabase)).listRoomBlocks({
+            ownerId
+          }),
+        logger
+      )
+    : [];
+
   const googleConnection = property
     ? await safeLoad(
         null,
@@ -164,6 +176,7 @@ export async function loadDashboardData(
     rooms,
     settings,
     bookings,
+    roomBlocks,
     googleConnection,
     notifications,
     activation

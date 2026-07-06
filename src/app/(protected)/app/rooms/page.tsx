@@ -1,7 +1,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { RoomsList } from "@/components/rooms/rooms-list";
-import { buildRoomOccupancySummaries } from "@/domain/bookings/room-occupancy-summary";
+import {
+  buildRoomOccupancySummaries,
+  todayInBucharest
+} from "@/domain/bookings/room-occupancy-summary";
 import { BookingService, RoomBlockService } from "@/domain/bookings/service";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
 import { getPrimaryProperty } from "@/domain/properties/service";
@@ -22,18 +25,6 @@ function getRoomPageMessage(messageKey?: string) {
   }
 
   return null;
-}
-
-function todayInBucharest() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "Europe/Bucharest",
-    year: "numeric"
-  }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-
-  return `${values.year}-${values.month}-${values.day}`;
 }
 
 export default async function RoomsPage({

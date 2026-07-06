@@ -219,7 +219,7 @@ export function RoomsList({
                       Cereri în așteptare pentru această cameră
                     </p>
                     <p className="mt-1">
-                      Nu blochează camera până nu este confirmată.
+                      Nu blochează camera până la confirmare.
                     </p>
                     <ul className="mt-3 grid gap-3">
                       {occupancy.pendingBookings.map((booking) => {

@@ -694,6 +694,9 @@ describe("public chat runtime safety", () => {
     delete process.env.OPENAI_API_KEY;
 
     expect(result.message).toContain("Am verificat disponibilitatea");
+    expect(result.message).toContain(
+      "Avem disponibile următoarele camere pentru perioada aleasă:"
+    );
     expect(result.message).toContain("B parter");
     expect(result.message).toContain(
       "Cererea va fi procesată cât mai repede."

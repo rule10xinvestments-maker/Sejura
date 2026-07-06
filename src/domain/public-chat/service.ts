@@ -1052,7 +1052,7 @@ export class AiReceptionistService {
 
       return [
         `Am verificat disponibilitatea pentru ${parsed.start_date} - ${parsed.end_date}, ${parsed.guests_count} persoane.`,
-        "Camere disponibile:",
+        "Avem disponibile următoarele camere pentru perioada aleasă:",
         roomLines,
         "Dacă îmi trimiți camera aleasă, numele tău și un telefon sau email, voi trimite cererea către proprietar. Cererea va fi procesată cât mai repede."
       ].join("\n");

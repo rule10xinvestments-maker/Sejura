@@ -175,7 +175,7 @@ describe("RoomsList", () => {
     expect(screen.getByText("Ana Pop")).toBeVisible();
     expect(screen.getByText(/Se eliberează:/)).toBeVisible();
     expect(screen.getByText("Cereri în așteptare pentru această cameră")).toBeVisible();
-    expect(screen.getByText("Nu blochează camera până nu este confirmată.")).toBeVisible();
+    expect(screen.getByText("Nu blochează camera până la confirmare.")).toBeVisible();
     expect(screen.getByRole("link", { name: "Vezi rezervarea" })).toHaveAttribute(
       "href",
       "/app/bookings/booking-1"
