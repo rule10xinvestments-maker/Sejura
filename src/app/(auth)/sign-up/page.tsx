@@ -1,5 +1,9 @@
 import { AuthForm } from "@/components/auth/auth-form";
 
-export default function SignUpPage() {
-  return <AuthForm mode="sign-up" />;
+export default function SignUpPage({
+  searchParams
+}: {
+  searchParams?: { error?: string };
+}) {
+  return <AuthForm authError={searchParams?.error} mode="sign-up" />;
 }

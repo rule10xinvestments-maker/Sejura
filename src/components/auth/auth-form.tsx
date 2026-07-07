@@ -11,16 +11,51 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthFormProps = {
   mode: "sign-in" | "sign-up";
+  authError?: string | null;
 };
 
-export function AuthForm({ mode }: AuthFormProps) {
+function authErrorMessage(error?: string | null) {
+  if (!error) return null;
+
+  if (error === "google-auth-missing-code") {
+    return "Autentificarea cu Google nu a putut fi finalizată. Încearcă din nou.";
+  }
+
+  if (error === "google-auth-provider") {
+    return "Autentificarea cu Google nu este configurată complet. Contactează echipa Sejura sau folosește emailul și parola.";
+  }
+
+  if (error === "google-auth-failed") {
+    return "Autentificarea cu Google a eșuat. Încearcă din nou sau folosește emailul și parola.";
+  }
+
+  return "Autentificarea nu a putut fi finalizată. Încearcă din nou.";
+}
+
+function ownerSafeAuthError(message?: string) {
+  const normalized = message?.toLowerCase() ?? "";
+
+  if (
+    normalized.includes("provider") ||
+    normalized.includes("oauth") ||
+    normalized.includes("unsupported")
+  ) {
+    return "Autentificarea cu Google nu este configurată complet. Contactează echipa Sejura sau folosește emailul și parola.";
+  }
+
+  return "Autentificarea cu Google a eșuat. Încearcă din nou sau folosește emailul și parola.";
+}
+
+export function AuthForm({ mode, authError }: AuthFormProps) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(authErrorMessage(authError));
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const isSignUp = mode === "sign-up";
+  const isGoogleAuthEnabled =
+    process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
   let supabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
   let configError: EnvConfigError | null = null;
 
@@ -81,17 +116,42 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
 
     const origin = window.location.origin;
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth/callback?next=/app`
+        redirectTo: `${origin}/auth/callback?next=/app`,
+        skipBrowserRedirect: true
       }
     });
 
     if (oauthError) {
-      setError(oauthError.message);
+      setError(ownerSafeAuthError(oauthError.message));
       setGoogleLoading(false);
+      return;
     }
+
+    if (!data.url) {
+      setError(ownerSafeAuthError());
+      setGoogleLoading(false);
+      return;
+    }
+
+    const preflightResponse = await fetch("/api/auth/google/preflight", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ url: data.url })
+    });
+    const preflight = (await preflightResponse.json()) as { ok?: boolean };
+
+    if (!preflightResponse.ok || !preflight.ok) {
+      setError(ownerSafeAuthError("provider is not enabled"));
+      setGoogleLoading(false);
+      return;
+    }
+
+    window.location.assign(data.url);
   }
 
   return (
@@ -223,20 +283,29 @@ export function AuthForm({ mode }: AuthFormProps) {
           </button>
         </form>
 
-        <div className="my-5 flex items-center gap-3">
-          <div className="h-px flex-1 bg-line" />
-          <span className="text-xs font-semibold uppercase text-ink/50">sau</span>
-          <div className="h-px flex-1 bg-line" />
-        </div>
+        {isGoogleAuthEnabled ? (
+          <>
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-line" />
+              <span className="text-xs font-semibold uppercase text-ink/50">sau</span>
+              <div className="h-px flex-1 bg-line" />
+            </div>
 
-        <button
-          className="button-secondary w-full"
-          disabled={googleLoading || !supabase}
-          onClick={continueWithGoogle}
-          type="button"
-        >
-          {googleLoading ? "Se deschide Google..." : "Continu\u0103 cu Google"}
-        </button>
+            <button
+              className="button-secondary w-full"
+              disabled={googleLoading || !supabase}
+              onClick={continueWithGoogle}
+              type="button"
+            >
+              {googleLoading ? "Se deschide Google..." : "Continu\u0103 cu Google"}
+            </button>
+          </>
+        ) : (
+          <p className="mt-4 rounded-md border border-line bg-mist px-3 py-2 text-sm text-ink/70">
+            Autentificarea cu Google nu este activă încă. Folosește emailul și
+            parola pentru contul Sejura.
+          </p>
+        )}
 
         <p className="mt-4 text-sm text-ink/70">
           {isSignUp ? "Ai deja cont?" : "Nu ai cont?"}{" "}

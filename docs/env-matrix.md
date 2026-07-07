@@ -5,6 +5,7 @@
 | --- | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Public client/server | Yes | Supabase project URL | Safe to expose as public config. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public client/server | Yes | Supabase anonymous client | Safe to expose; RLS remains required. |
+| `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED` | Public client | Conditional | Shows Google Sign-In for owner auth | Set to `true` only after the Supabase Google Auth provider is enabled and tested. This is not Google Calendar OAuth. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Yes | Public chat route handlers and service-role writes | Never expose with `NEXT_PUBLIC_`. |
 | `OPENAI_API_KEY` | Server only | Yes | Jonny public reservation assistant | Without it, chat fails safely but pilot booking flow is not usable. |
 | `APP_BASE_URL` | Server/config | Yes | Links, redirects, operational references | Must match deployed pilot URL. |

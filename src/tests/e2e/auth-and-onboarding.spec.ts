@@ -8,17 +8,24 @@ test("home and auth screens render Romanian-first positioning", async ({ page })
   ).toBeVisible();
 
   await page.getByRole("link", { name: "Creeaza cont" }).click();
-  await expect(page.getByRole("heading", { name: "Creeaz\u0103 cont" })).toBeVisible();
-  await expect(page.getByLabel("Confirm\u0103 parola")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continu\u0103 cu Google" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Creează cont" })).toBeVisible();
+  await expect(page.getByLabel("Confirmă parola")).toBeVisible();
+  await expect(
+    page.getByText("Autentificarea cu Google nu este activă încă.")
+  ).toBeVisible();
 });
 
-test("sign-in screen renders Google login button", async ({ page }) => {
+test("sign-in screen renders email login while Google auth is disabled", async ({
+  page
+}) => {
   await page.goto("/sign-in");
-  await expect(page.getByRole("heading", { name: "Intr\u0103 in cont" })).toBeVisible();
-  await expect(page.getByLabel("Parol\u0103")).toBeVisible();
-  await expect(page.getByLabel("Confirm\u0103 parola")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Continu\u0103 cu Google" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Intră in cont" })).toBeVisible();
+  await expect(page.getByLabel("Parolă")).toBeVisible();
+  await expect(page.getByLabel("Confirmă parola")).toHaveCount(0);
+  await expect(
+    page.getByText("Autentificarea cu Google nu este activă încă.")
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continuă cu Google" })).toHaveCount(0);
 });
 
 test("auth callback redirects missing code safely", async ({ page }) => {
@@ -47,8 +54,8 @@ test("onboarding smoke requires Supabase auth env for full create flow", async (
 
   await page.goto("/sign-in");
   await page.getByLabel("Email").fill(process.env.E2E_OWNER_EMAIL!);
-  await page.getByLabel("Parol\u0103").fill(process.env.E2E_OWNER_PASSWORD!);
-  await page.getByRole("button", { name: "Intr\u0103" }).click();
+  await page.getByLabel("Parolă").fill(process.env.E2E_OWNER_PASSWORD!);
+  await page.getByRole("button", { name: "Intră" }).click();
   await expect(page).toHaveURL(/\/app/);
   await page.goto("/app/onboarding");
   await expect(

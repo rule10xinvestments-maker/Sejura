@@ -12,4 +12,15 @@ describe("Google auth callback", () => {
       "https://sejura.test/sign-in?error=google-auth-missing-code"
     );
   });
+
+  it("redirects provider errors to a clean app error", async () => {
+    const response = await GET(
+      new Request("https://sejura.test/auth/callback?error=access_denied") as never
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://sejura.test/sign-in?error=google-auth-provider"
+    );
+  });
 });
