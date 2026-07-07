@@ -3,25 +3,6 @@ import Link from "next/link";
 import React from "react";
 import { SejuraLogo } from "@/components/brand/sejura-logo";
 
-function SearchIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="h-5 w-5 shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <path
-        d="m20 20-4.5-4.5m2-5A7 7 0 1 1 3.5 10.5a7 7 0 0 1 14 0Z"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
 function MapPinIcon() {
   return (
     <svg
@@ -97,7 +78,11 @@ export default function HomePage() {
               <div className="inline-flex rounded-md bg-[#f7efe2] px-3 py-2 text-sm font-semibold text-clay">
                 Pentru oaspeți
               </div>
-              <div className="mt-3 flex items-center gap-3">
+              <Link
+                aria-label="Caută cazare"
+                className="mt-3 inline-flex items-center gap-3 rounded-lg pr-3 text-left transition hover:text-moss focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-moss"
+                href="/guest"
+              >
                 <span
                   aria-hidden="true"
                   className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-moss text-white"
@@ -106,7 +91,7 @@ export default function HomePage() {
                   <MapPinIcon />
                 </span>
                 <h2 className="text-2xl font-bold text-ink">Caut cazare</h2>
-              </div>
+              </Link>
               <p className="mt-3 text-sm leading-6 text-ink/75 sm:text-base">
                 Vezi pensiuni, cabane și vile locale fără cont.
               </p>
@@ -114,15 +99,6 @@ export default function HomePage() {
                 Alege o unitate, verifică informațiile și trimite o cerere de
                 cazare.
               </p>
-              <div className="mt-4">
-                <Link
-                  className="button-primary inline-flex min-h-12 items-center gap-2 px-5 text-base"
-                  href="/guest"
-                >
-                  <SearchIcon />
-                  <span>Caută cazare</span>
-                </Link>
-              </div>
             </article>
 
             <article className="rounded-lg border border-line bg-white/88 p-4 shadow-soft backdrop-blur sm:p-6">

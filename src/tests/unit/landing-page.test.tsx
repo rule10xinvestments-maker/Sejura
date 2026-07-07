@@ -26,24 +26,27 @@ describe("landing page", () => {
     expect(screen.queryByText("Am deja cont")).not.toBeInTheDocument();
   });
 
-  it("does not repeat the guest title as identical CTA text", () => {
+  it("uses the guest title row as the discovery CTA", () => {
     render(<HomePage />);
 
     expect(screen.getByRole("heading", { name: "Caut cazare" })).toBeVisible();
-    expect(screen.queryByRole("link", { name: "Caut cazare" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Caută cazare" })).toBeVisible();
-  });
-
-  it("keeps guest and owner CTAs clickable", () => {
-    render(<HomePage />);
-
     expect(screen.getByRole("link", { name: "Caută cazare" })).toHaveAttribute(
       "href",
       "/guest"
     );
+  });
+
+  it("removes the lower duplicate guest CTA and keeps owner CTAs clickable", () => {
+    render(<HomePage />);
+
+    expect(screen.queryByText("Caută cazare")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Administrează proprietatea" })).toHaveAttribute(
       "href",
       "/app"
+    );
+    expect(screen.getByRole("link", { name: "Creează cont de proprietar" })).toHaveAttribute(
+      "href",
+      "/sign-up"
     );
   });
 
