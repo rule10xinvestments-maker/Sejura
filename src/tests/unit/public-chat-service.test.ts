@@ -54,6 +54,14 @@ function propertyContext(): PublicPropertyContext {
       calendar_required_for_confirmation: true,
       created_at: "2026-01-01T00:00:00.000Z",
       updated_at: "2026-01-01T00:00:00.000Z"
+    },
+    owner: {
+      id: "owner-1",
+      email: "owner@example.com",
+      account_status: "active",
+      is_demo: false,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z"
     }
   };
 }
@@ -81,6 +89,7 @@ function createAiBookingFlowSupabase(options?: {
   const rooms = options?.rooms ?? [room];
   const rows: Record<string, Row[]> = {
     properties: [context.property],
+    owners: [context.owner as Row],
     property_public_pages: [context.publicPage as Row],
     property_settings: [context.settings as Row],
     conversations: [
@@ -526,6 +535,23 @@ describe("public chat runtime safety", () => {
         createPublicChatSupabase({ publicBookingEnabled: false }).client
       ).startConversation("pensiunea-test")
     ).rejects.toMatchObject({ code: "SETUP_INCOMPLETE" });
+  });
+
+  it("keeps public page unavailable when the owner account is suspended", async () => {
+    const fake = createAiBookingFlowSupabase();
+    fake.rows.owners[0].account_status = "suspended";
+
+    const readiness = await new PublicConversationService(
+      fake.client
+    ).getPublicPageReadiness("pensiunea-test");
+
+    expect(readiness).toMatchObject({
+      ok: false,
+      reason: "OWNER_SUSPENDED"
+    });
+    await expect(
+      new PublicConversationService(fake.client).startConversation("pensiunea-test")
+    ).rejects.toBeInstanceOf(PublicChatError);
   });
 
   it("reports public page readiness reasons for disabled public bookings", async () => {

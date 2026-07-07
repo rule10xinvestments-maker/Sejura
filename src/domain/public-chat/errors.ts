@@ -25,7 +25,7 @@ export class PublicChatError extends Error {
 
 export function guestSafeMessage(code: PublicChatErrorCode) {
   if (code === "PUBLIC_PAGE_DISABLED") {
-    return "Aceasta pagina de rezervari nu este disponibila momentan.";
+    return "Această pagină nu este disponibilă momentan.";
   }
   if (code === "SETUP_INCOMPLETE") {
     return "Rezervarile online nu sunt disponibile momentan pentru aceasta pensiune.";

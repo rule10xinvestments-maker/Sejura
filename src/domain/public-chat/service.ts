@@ -21,6 +21,7 @@ export const jonnyIntro =
 export type PublicPageReadinessReason =
   | "READY"
   | "PROPERTY_NOT_FOUND"
+  | "OWNER_SUSPENDED"
   | "PROPERTY_DISABLED"
   | "PUBLIC_DISABLED"
   | "PUBLIC_BOOKINGS_DISABLED"
@@ -55,7 +56,8 @@ export class PublicConversationService {
     if (error) throw error;
     if (!property) return null;
 
-    const [{ data: publicPage }, { data: settings }] = await Promise.all([
+    const [{ data: publicPage }, { data: settings }, { data: owner }] =
+      await Promise.all([
       this.supabase
         .from("property_public_pages")
         .select("*")
@@ -66,13 +68,20 @@ export class PublicConversationService {
         .select("*")
         .eq("property_id", property.id)
         .maybeSingle()
+      ,
+      this.supabase
+        .from("owners")
+        .select("*")
+        .eq("id", property.owner_id)
+        .maybeSingle()
     ]);
 
-    return { property, publicPage, settings };
+    return { property, publicPage, settings, owner };
   }
 
   isPublicEnabled(context: PublicPropertyContext) {
     return Boolean(
+      context.owner?.account_status === "active" &&
       context.publicPage?.is_public &&
         context.publicPage.chat_enabled &&
         context.settings?.ai_enabled &&
@@ -101,6 +110,19 @@ export class PublicConversationService {
         ok: false,
         reason: "PROPERTY_NOT_FOUND",
         context: null,
+        rooms: []
+      };
+    }
+
+    if (
+      context.owner?.account_status === "suspended" ||
+      context.owner?.account_status === "disabled" ||
+      context.owner?.account_status === "deletion_requested"
+    ) {
+      return {
+        ok: false,
+        reason: "OWNER_SUSPENDED",
+        context,
         rooms: []
       };
     }
@@ -187,6 +209,7 @@ export class PublicConversationService {
     }
     if (
       readiness.reason === "PUBLIC_DISABLED" ||
+      readiness.reason === "OWNER_SUSPENDED" ||
       readiness.reason === "PROPERTY_DISABLED"
     ) {
       throw new PublicChatError("PUBLIC_PAGE_DISABLED", "Pagina publica este dezactivata.");

@@ -4,6 +4,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const publicPaths = new Set([
   "/",
+  "/account-suspended",
   "/cazare",
   "/guest",
   "/sign-in",

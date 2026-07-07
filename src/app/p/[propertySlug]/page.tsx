@@ -27,6 +27,7 @@ export default async function PublicPropertyPage({
   if (
     !context ||
     readiness.reason === "PROPERTY_NOT_FOUND" ||
+    readiness.reason === "OWNER_SUSPENDED" ||
     readiness.reason === "PROPERTY_DISABLED" ||
     readiness.reason === "PUBLIC_DISABLED"
   ) {
@@ -35,7 +36,7 @@ export default async function PublicPropertyPage({
         <div className="mx-auto max-w-3xl space-y-4">
           <SejuraLogo size="sm" />
           <section className="panel">
-            <p>Aceasta pagina de rezervari nu este disponibila momentan.</p>
+            <p>Această pagină nu este disponibilă momentan.</p>
           </section>
         </div>
       </main>

@@ -9,6 +9,7 @@ export type PublicPropertyContext = {
   property: Database["public"]["Tables"]["properties"]["Row"];
   publicPage: Database["public"]["Tables"]["property_public_pages"]["Row"] | null;
   settings: Database["public"]["Tables"]["property_settings"]["Row"] | null;
+  owner: Database["public"]["Tables"]["owners"]["Row"] | null;
 };
 
 export type SessionContext = {

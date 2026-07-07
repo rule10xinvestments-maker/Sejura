@@ -10,9 +10,26 @@ export type Database = {
   public: {
     Tables: {
       owners: {
-        Row: { id: string; email: string | null; created_at: string; updated_at: string };
-        Insert: { id: string; email?: string | null };
-        Update: { email?: string | null; updated_at?: string };
+        Row: {
+          id: string;
+          email: string | null;
+          account_status: Database["public"]["Enums"]["owner_account_status"];
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          email?: string | null;
+          account_status?: Database["public"]["Enums"]["owner_account_status"];
+          is_demo?: boolean;
+        };
+        Update: {
+          email?: string | null;
+          account_status?: Database["public"]["Enums"]["owner_account_status"];
+          is_demo?: boolean;
+          updated_at?: string;
+        };
         Relationships: [];
       };
       properties: {
@@ -380,6 +397,42 @@ export type Database = {
         >;
         Relationships: [];
       };
+      platform_admins: {
+        Row: {
+          user_id: string;
+          active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          active?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["platform_admins"]["Row"]>;
+        Relationships: [];
+      };
+      platform_admin_audit_logs: {
+        Row: {
+          id: string;
+          actor_admin_id: string;
+          target_owner_id: string | null;
+          target_property_id: string | null;
+          action: string;
+          reason: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: Partial<
+          Database["public"]["Tables"]["platform_admin_audit_logs"]["Row"]
+        > & {
+          actor_admin_id: string;
+          action: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["platform_admin_audit_logs"]["Row"]
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -414,6 +467,11 @@ export type Database = {
         | "public_page_enabled"
         | "ai_enabled";
       notification_status: "queued" | "sent" | "failed" | "read";
+      owner_account_status:
+        | "active"
+        | "suspended"
+        | "disabled"
+        | "deletion_requested";
     };
     CompositeTypes: Record<string, never>;
   };
