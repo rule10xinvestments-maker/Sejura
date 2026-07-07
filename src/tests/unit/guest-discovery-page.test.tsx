@@ -27,8 +27,8 @@ describe("guest discovery page", () => {
         slug: "pestera-pusnicului",
         city: "Brașov",
         publicDescription: "Cabană liniștită aproape de trasee.",
-        checkInTime: "15:00",
-        checkOutTime: "11:00",
+        checkInTime: "15:00:00",
+        checkOutTime: "11:00:00",
         activeRoomCount: 2,
         fromPrice: 240
       },
@@ -50,12 +50,23 @@ describe("guest discovery page", () => {
     expect(screen.getByRole("heading", { name: "Cazări locale" })).toBeVisible();
     expect(screen.getByText("Peștera Pusnicului")).toBeVisible();
     expect(screen.getByText("Peștera Ursului")).toBeVisible();
+    expect(screen.getByLabelText("Program sosire și plecare")).toBeVisible();
+    expect(screen.getByRole("img", { name: "Sosire" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Plecare" })).toBeInTheDocument();
+    expect(screen.getByText("Sosire de la")).toBeVisible();
+    expect(screen.getByText("Plecare până la")).toBeVisible();
+    expect(screen.getByText("15:00")).toBeVisible();
+    expect(screen.getByText("11:00")).toBeVisible();
+    expect(screen.queryByText("15:00:00")).not.toBeInTheDocument();
     expect(screen.getByText("2 camere active")).toBeVisible();
-    expect(screen.getByText("240 RON/noapte")).toBeVisible();
+    expect(screen.getAllByRole("img", { name: "Camere" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("img", { name: "Preț" })).toBeInTheDocument();
+    expect(screen.getByText("de la 240 RON/noapte")).toBeVisible();
     expect(screen.getAllByRole("link", { name: "Vezi detalii" })[0]).toHaveAttribute(
       "href",
       "/p/pestera-pusnicului"
     );
+    expect(screen.queryByText("Client Privat")).not.toBeInTheDocument();
   });
 
   it("renders the empty state when no public accommodations exist", async () => {

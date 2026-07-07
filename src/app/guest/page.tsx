@@ -15,6 +15,88 @@ function formatRoomCount(count: number) {
   return `${count} camere active`;
 }
 
+function formatPublicTime(time: string | null) {
+  if (!time) return "-";
+  return time.slice(0, 5);
+}
+
+function DoorInIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M4 21h16M7 21V4.5A1.5 1.5 0 0 1 8.5 3H17v18M10 12h6m0 0-2.5-2.5M16 12l-2.5 2.5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function DoorOutIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M4 21h16M7 21V4.5A1.5 1.5 0 0 1 8.5 3H17v18M16 12h-6m0 0 2.5-2.5M10 12l2.5 2.5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function LocationIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M12 21s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="M12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function RoomsIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M4 11V5m0 8h16m0 0v6M4 13v6m2-8h4a2 2 0 0 0 0-4H6v4Zm6 0h6a4 4 0 0 1 4 4v2"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function TagIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M20 13.5 13.5 20a2 2 0 0 1-2.8 0L4 13.3V4h9.3l6.7 6.7a2 2 0 0 1 0 2.8ZM8 8h.01"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
 export default async function GuestPage() {
   const supabase = createSupabaseServiceRoleClient();
   const properties = await getPublicPropertyListings(supabase);
@@ -77,9 +159,14 @@ export default async function GuestPage() {
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-xl font-bold text-ink">{property.name}</h3>
+                      <h3 className="text-xl font-bold leading-tight text-ink">
+                        {property.name}
+                      </h3>
                       {property.city ? (
-                        <p className="mt-1 text-sm text-ink/65">{property.city}</p>
+                        <p className="mt-1 inline-flex items-center gap-1 text-sm text-ink/65">
+                          <LocationIcon />
+                          {property.city}
+                        </p>
                       ) : null}
                     </div>
                     <span className="rounded-md bg-[#f7efe2] px-3 py-2 text-xs font-semibold text-clay">
@@ -93,36 +180,58 @@ export default async function GuestPage() {
                     </p>
                   ) : null}
 
-                  <dl className="mt-4 grid gap-2 text-sm text-ink/70 sm:grid-cols-2">
-                    {property.checkInTime ? (
-                      <div className="rounded-md bg-mist px-3 py-2">
-                        <dt className="text-ink/55">Check-in</dt>
-                        <dd className="font-semibold text-ink">{property.checkInTime}</dd>
-                      </div>
-                    ) : null}
-                    {property.checkOutTime ? (
-                      <div className="rounded-md bg-mist px-3 py-2">
-                        <dt className="text-ink/55">Check-out</dt>
-                        <dd className="font-semibold text-ink">{property.checkOutTime}</dd>
-                      </div>
-                    ) : null}
+                  {property.checkInTime || property.checkOutTime ? (
+                    <dl
+                      aria-label="Program sosire și plecare"
+                      className="mt-4 grid grid-cols-2 gap-2 rounded-md bg-mist p-2 text-sm"
+                    >
+                      {property.checkInTime ? (
+                        <div className="flex items-center gap-2 rounded-md bg-white px-2 py-2">
+                          <span aria-label="Sosire" className="text-moss" role="img">
+                            <DoorInIcon />
+                          </span>
+                          <div>
+                            <dt className="text-xs text-ink/55">Sosire de la</dt>
+                            <dd className="font-semibold text-ink">
+                              {formatPublicTime(property.checkInTime)}
+                            </dd>
+                          </div>
+                        </div>
+                      ) : null}
+                      {property.checkOutTime ? (
+                        <div className="flex items-center gap-2 rounded-md bg-white px-2 py-2">
+                          <span aria-label="Plecare" className="text-moss" role="img">
+                            <DoorOutIcon />
+                          </span>
+                          <div>
+                            <dt className="text-xs text-ink/55">Plecare până la</dt>
+                            <dd className="font-semibold text-ink">
+                              {formatPublicTime(property.checkOutTime)}
+                            </dd>
+                          </div>
+                        </div>
+                      ) : null}
+                    </dl>
+                  ) : null}
+
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-ink/65">
                     {property.activeRoomCount > 0 ? (
-                      <div className="rounded-md bg-mist px-3 py-2">
-                        <dt className="text-ink/55">Camere</dt>
-                        <dd className="font-semibold text-ink">
-                          {formatRoomCount(property.activeRoomCount)}
-                        </dd>
-                      </div>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-mist px-2 py-1">
+                        <span aria-label="Camere" className="text-moss" role="img">
+                          <RoomsIcon />
+                        </span>
+                        {formatRoomCount(property.activeRoomCount)}
+                      </span>
                     ) : null}
                     {property.fromPrice !== null ? (
-                      <div className="rounded-md bg-mist px-3 py-2">
-                        <dt className="text-ink/55">De la</dt>
-                        <dd className="font-semibold text-ink">
-                          {property.fromPrice} RON/noapte
-                        </dd>
-                      </div>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-mist px-2 py-1">
+                        <span aria-label="Preț" className="text-moss" role="img">
+                          <TagIcon />
+                        </span>
+                        de la {property.fromPrice} RON/noapte
+                      </span>
                     ) : null}
-                  </dl>
+                  </div>
 
                   <div className="mt-4">
                     <Link
