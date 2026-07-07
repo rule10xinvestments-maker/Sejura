@@ -1,6 +1,26 @@
 import Image from "next/image";
 import Link from "next/link";
+import React from "react";
 import { SejuraLogo } from "@/components/brand/sejura-logo";
+
+function SearchIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5 shrink-0"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="m20 20-4.5-4.5m2-5A7 7 0 1 1 3.5 10.5a7 7 0 0 1 14 0Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
 
 const ownerHighlights = [
   "Adaugi camerele",
@@ -28,7 +48,7 @@ export default function HomePage() {
         <nav className="flex items-center justify-between gap-3">
           <SejuraLogo size="sm" />
           <Link className="button-secondary min-h-10 px-4" href="/sign-in">
-            Intra in cont
+            Intră în cont
           </Link>
         </nav>
 
@@ -41,13 +61,46 @@ export default function HomePage() {
               Ce vrei sa faci in Sejura?
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-ink/75 sm:text-xl">
-              Alege drumul potrivit: administrezi o pensiune, vila sau cabana,
-              ori cauti o cazare locala.
+              Descoperi pensiuni, cabane si vile locale sau administrezi o
+              proprietate intr-un calendar intern simplu.
             </p>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2 lg:gap-5">
             <article className="rounded-lg border border-line bg-white/90 p-4 shadow-soft backdrop-blur sm:p-6">
+              <div className="inline-flex rounded-md bg-[#f7efe2] px-3 py-2 text-sm font-semibold text-clay">
+                Pentru oaspeți
+              </div>
+              <h2 className="mt-3 text-2xl font-bold text-ink">Caut cazare</h2>
+              <p className="mt-3 text-sm leading-6 text-ink/75 sm:text-base">
+                Vezi pensiuni, cabane și vile locale fără cont.
+              </p>
+              <p className="mt-2 text-sm leading-6 text-ink/75 sm:text-base">
+                Alege o unitate, verifică informațiile și trimite o cerere de
+                cazare.
+              </p>
+              <div className="mt-4 rounded-lg border border-line bg-mist/80 p-3 text-sm leading-6 text-ink/75">
+                <p>
+                  Paginile publice Sejura pot fi folosite ca mini-site pentru
+                  pensiuni care nu au un website propriu.
+                </p>
+                <p className="mt-2">
+                  Linkul poate fi trimis pe WhatsApp, Facebook, Instagram sau
+                  Google Business.
+                </p>
+              </div>
+              <div className="mt-4">
+                <Link
+                  className="button-primary inline-flex min-h-12 items-center gap-2 px-5 text-base"
+                  href="/guest"
+                >
+                  <SearchIcon />
+                  <span>Caută cazare</span>
+                </Link>
+              </div>
+            </article>
+
+            <article className="rounded-lg border border-line bg-white/88 p-4 shadow-soft backdrop-blur sm:p-6">
               <div className="flex items-start gap-3">
                 <SejuraLogo showText={false} size="md" />
                 <div>
@@ -55,13 +108,13 @@ export default function HomePage() {
                     Pentru proprietari
                   </p>
                   <h2 className="mt-1 text-2xl font-bold text-ink">
-                    Sunt proprietar
+                    Am o pensiune, cabană sau vilă
                   </h2>
                 </div>
               </div>
               <p className="mt-4 text-sm leading-6 text-ink/75 sm:text-base">
-                Intra aici daca ai o pensiune, vila, cabana sau alta cazare si
-                vrei sa iti organizezi rezervarile.
+                Administrează camerele, cererile și rezervările într-un calendar
+                intern simplu.
               </p>
               <details className="mt-4 rounded-lg border border-line bg-mist/80 p-3 text-sm text-ink/75">
                 <summary className="cursor-pointer font-semibold text-moss">
@@ -76,39 +129,11 @@ export default function HomePage() {
                 </ul>
               </details>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Link className="button-primary min-h-12 px-5 text-base" href="/sign-in">
-                  Intra ca proprietar
+                <Link className="button-primary min-h-12 px-5 text-base" href="/app">
+                  Administrează proprietatea
                 </Link>
                 <Link className="button-secondary min-h-12 px-5 text-base" href="/sign-up">
-                  Creeaza cont
-                </Link>
-              </div>
-            </article>
-
-            <article className="rounded-lg border border-line bg-white/88 p-4 shadow-soft backdrop-blur sm:p-6">
-              <div className="inline-flex rounded-md bg-[#f7efe2] px-3 py-2 text-sm font-semibold text-clay">
-                Pentru oaspeti
-              </div>
-              <h2 className="mt-3 text-2xl font-bold text-ink">Caut cazare</h2>
-              <p className="mt-3 text-sm leading-6 text-ink/75 sm:text-base">
-                Alege aceasta varianta daca vrei sa gasesti o cazare locala si
-                sa trimiti o cerere de rezervare.
-              </p>
-              <details className="mt-4 rounded-lg border border-line bg-mist/80 p-3 text-sm text-ink/75">
-                <summary className="cursor-pointer font-semibold text-moss">
-                  Ce vei putea face aici
-                </summary>
-                <p className="mt-3 leading-6">
-                  Zona pentru oaspeti este in pregatire. In curand vei putea
-                  vedea proprietati si disponibilitate direct in Sejura.
-                </p>
-              </details>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Link className="button-secondary min-h-12 px-5 text-base" href="/guest">
-                  Caut cazare
-                </Link>
-                <Link className="button-secondary min-h-12 px-5 text-base" href="/sign-in">
-                  Am deja cont
+                  Creează cont de proprietar
                 </Link>
               </div>
             </article>

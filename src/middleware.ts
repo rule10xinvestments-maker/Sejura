@@ -12,7 +12,10 @@ const publicPaths = new Set([
 ]);
 
 export async function middleware(request: NextRequest) {
-  if (publicPaths.has(request.nextUrl.pathname)) {
+  if (
+    publicPaths.has(request.nextUrl.pathname) ||
+    request.nextUrl.pathname.startsWith("/p/")
+  ) {
     return NextResponse.next();
   }
 

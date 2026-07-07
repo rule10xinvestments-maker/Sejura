@@ -2,12 +2,12 @@ import { expect, test } from "@playwright/test";
 
 test("home and auth screens render Romanian-first positioning", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Sejura" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ce vrei sa faci in Sejura?" })).toBeVisible();
   await expect(
-    page.getByText("Asistent de rezervari pentru pensiuni, cabane si vile locale.")
+    page.getByText("Vezi pensiuni, cabane și vile locale fără cont.")
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Creeaza cont" }).click();
+  await page.getByRole("link", { name: "Creează cont de proprietar" }).click();
   await expect(page.getByRole("heading", { name: "Creeaz\u0103 cont" })).toBeVisible();
   await expect(page.getByLabel("Confirm\u0103 parola")).toBeVisible();
   await expect(page.getByRole("button", { name: "Continu\u0103 cu Google" })).toBeVisible();
