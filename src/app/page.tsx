@@ -22,6 +22,32 @@ function SearchIcon() {
   );
 }
 
+function MapPinIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-6 w-6 shrink-0"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M12 21s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="M12 12.2a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
 const ownerHighlights = [
   "Adaugi camerele",
   "Urmaresti calendarul",
@@ -71,7 +97,16 @@ export default function HomePage() {
               <div className="inline-flex rounded-md bg-[#f7efe2] px-3 py-2 text-sm font-semibold text-clay">
                 Pentru oaspeți
               </div>
-              <h2 className="mt-3 text-2xl font-bold text-ink">Caut cazare</h2>
+              <div className="mt-3 flex items-center gap-3">
+                <span
+                  aria-hidden="true"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-moss text-white"
+                  data-testid="guest-card-icon"
+                >
+                  <MapPinIcon />
+                </span>
+                <h2 className="text-2xl font-bold text-ink">Caut cazare</h2>
+              </div>
               <p className="mt-3 text-sm leading-6 text-ink/75 sm:text-base">
                 Vezi pensiuni, cabane și vile locale fără cont.
               </p>
@@ -79,16 +114,6 @@ export default function HomePage() {
                 Alege o unitate, verifică informațiile și trimite o cerere de
                 cazare.
               </p>
-              <div className="mt-4 rounded-lg border border-line bg-mist/80 p-3 text-sm leading-6 text-ink/75">
-                <p>
-                  Paginile publice Sejura pot fi folosite ca mini-site pentru
-                  pensiuni care nu au un website propriu.
-                </p>
-                <p className="mt-2">
-                  Linkul poate fi trimis pe WhatsApp, Facebook, Instagram sau
-                  Google Business.
-                </p>
-              </div>
               <div className="mt-4">
                 <Link
                   className="button-primary inline-flex min-h-12 items-center gap-2 px-5 text-base"
@@ -102,7 +127,12 @@ export default function HomePage() {
 
             <article className="rounded-lg border border-line bg-white/88 p-4 shadow-soft backdrop-blur sm:p-6">
               <div className="flex items-start gap-3">
-                <SejuraLogo showText={false} size="md" />
+                <span
+                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl [&_img]:h-12 [&_img]:w-12 [&_img]:object-contain"
+                  data-testid="owner-card-icon"
+                >
+                  <SejuraLogo showText={false} size="md" />
+                </span>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-clay">
                     Pentru proprietari
@@ -127,6 +157,16 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-3 rounded-md bg-white/75 px-3 py-3 leading-6">
+                  <p>
+                    Pagina publică Sejura poate fi folosită ca mini-site pentru
+                    pensiunea ta, chiar dacă nu ai un website propriu.
+                  </p>
+                  <p className="mt-2">
+                    Poți trimite linkul pe WhatsApp, Facebook, Instagram sau
+                    Google Business.
+                  </p>
+                </div>
               </details>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <Link className="button-primary min-h-12 px-5 text-base" href="/app">

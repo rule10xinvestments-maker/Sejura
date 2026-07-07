@@ -47,21 +47,37 @@ describe("landing page", () => {
     );
   });
 
-  it("positions public Sejura pages as mini-sites for local discovery", () => {
+  it("moves mini-site helper copy from guest card to owner card", () => {
     render(<HomePage />);
 
     const guestCard = screen.getByRole("heading", { name: "Caut cazare" }).closest("article");
+    const ownerCard = screen
+      .getByRole("heading", { name: "Am o pensiune, cabană sau vilă" })
+      .closest("article");
 
     expect(guestCard).not.toBeNull();
+    expect(ownerCard).not.toBeNull();
     expect(
-      within(guestCard!).getByText(
-        "Paginile publice Sejura pot fi folosite ca mini-site pentru pensiuni care nu au un website propriu."
+      within(guestCard!).queryByText(
+        "Pagina publică Sejura poate fi folosită ca mini-site pentru pensiunea ta, chiar dacă nu ai un website propriu."
       )
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
     expect(
-      within(guestCard!).getByText(
-        "Linkul poate fi trimis pe WhatsApp, Facebook, Instagram sau Google Business."
+      within(ownerCard!).getByText(
+        "Pagina publică Sejura poate fi folosită ca mini-site pentru pensiunea ta, chiar dacă nu ai un website propriu."
       )
-    ).toBeVisible();
+    ).toBeInTheDocument();
+    expect(
+      within(ownerCard!).getByText(
+        "Poți trimite linkul pe WhatsApp, Facebook, Instagram sau Google Business."
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("shows a guest icon and keeps the owner icon square", () => {
+    render(<HomePage />);
+
+    expect(screen.getByTestId("guest-card-icon")).toBeVisible();
+    expect(screen.getByTestId("owner-card-icon")).toHaveClass("h-12", "w-12");
   });
 });
