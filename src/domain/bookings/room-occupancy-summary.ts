@@ -47,8 +47,8 @@ function overlapsDate(date: string, startDate: string, endDate: string) {
   return startDate <= date && date < endDate;
 }
 
-function startsTodayOrLater(today: string, startDate: string) {
-  return startDate >= today;
+function startsAfterToday(today: string, startDate: string) {
+  return startDate > today;
 }
 
 function byStartDate<T extends { start_date: string; end_date: string }>(a: T, b: T) {
@@ -111,13 +111,13 @@ export function buildRoomOccupancySummaries({
         overlapsDate(today, booking.start_date, booking.end_date)
       ) ?? null;
     const nextBooking =
-      confirmed.find((booking) => startsTodayOrLater(today, booking.start_date)) ??
+      confirmed.find((booking) => startsAfterToday(today, booking.start_date)) ??
       null;
     const currentBlock =
       blocks.find((block) => overlapsDate(today, block.start_date, block.end_date)) ??
       null;
     const nextBlock =
-      blocks.find((block) => startsTodayOrLater(today, block.start_date)) ?? null;
+      blocks.find((block) => startsAfterToday(today, block.start_date)) ?? null;
 
     if (currentBooking) {
       return {

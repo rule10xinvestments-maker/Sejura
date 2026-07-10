@@ -183,7 +183,7 @@ export function RoomsList({
                   <div className="mt-3 grid gap-2 text-sm">
                     <p className="font-semibold">Următoarea rezervare:</p>
                     <p>{nextBookingCopy.guestName}</p>
-                    <p>Check-in: {nextBookingCopy.checkIn}</p>
+                    <p>Se ocupă de la: {nextBookingCopy.checkIn}</p>
                     <p>Se eliberează: {nextBookingCopy.checkout}</p>
                     <p>Status rezervare: {nextBookingCopy.statusLabel}</p>
                     <Link

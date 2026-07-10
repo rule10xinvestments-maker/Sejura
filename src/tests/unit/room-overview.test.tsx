@@ -111,7 +111,7 @@ function renderOverview() {
       status: "occupied",
       statusLabel: "Ocupată acum",
       currentBooking,
-      nextBooking: currentBooking,
+      nextBooking: null,
       pendingBookings: [],
       currentBlock: null,
       nextBlock: null
@@ -144,8 +144,9 @@ describe("RoomOverview", () => {
 
     expect(screen.getByRole("heading", { name: "Imagine de ansamblu camere" })).toBeVisible();
     expect(screen.getByText("Camere active").nextElementSibling).toHaveTextContent("3");
-    expect(screen.getAllByText("Camere libere")[0].nextElementSibling).toHaveTextContent("1");
-    expect(screen.getAllByText("Camere ocupate")[0].nextElementSibling).toHaveTextContent("1");
+    expect(screen.getAllByText("Libere acum")[0].nextElementSibling).toHaveTextContent("1");
+    expect(screen.getAllByText("Ocupate acum")[0].nextElementSibling).toHaveTextContent("1");
+    expect(screen.getAllByText("Rezervate viitor")[0].nextElementSibling).toHaveTextContent("1");
     expect(screen.getAllByText("Cereri în așteptare")[0].nextElementSibling).toHaveTextContent("1");
     expect(screen.getByText("Indisponibilă acum")).toBeVisible();
   });
@@ -163,6 +164,9 @@ describe("RoomOverview", () => {
       screen.getByRole("link", { name: /Vezi camerele ocupate/ })
     ).toHaveAttribute("href", "#camere-ocupate");
     expect(
+      screen.getByRole("link", { name: /Vezi rezervările viitoare/ })
+    ).toHaveAttribute("href", "#rezervari-viitoare");
+    expect(
       screen.getByRole("link", { name: /Vezi cererile în așteptare/ })
     ).toHaveAttribute("href", "#cereri-in-asteptare");
     expect(
@@ -171,6 +175,9 @@ describe("RoomOverview", () => {
     expect(
       screen.getByRole("heading", { name: "Camere ocupate" }).parentElement
     ).toHaveAttribute("id", "camere-ocupate");
+    expect(
+      screen.getByRole("heading", { name: "Rezervări viitoare" }).parentElement
+    ).toHaveAttribute("id", "rezervari-viitoare");
     expect(
       screen.getByRole("heading", { name: "Cereri în așteptare" }).parentElement
     ).toHaveAttribute("id", "cereri-in-asteptare");
@@ -200,7 +207,18 @@ describe("RoomOverview", () => {
     expect(within(freeSection).getByText("Camera Verde")).toBeVisible();
     expect(within(freeSection).getByText("Următoarea rezervare")).toBeVisible();
     expect(within(freeSection).getByText("Mihai Ionescu")).toBeVisible();
+    expect(within(freeSection).getByText(/Se ocupă de la:/)).toHaveTextContent("10 august 2026");
     expect(within(freeSection).getByRole("link", { name: "Vezi rezervarea" })).toHaveAttribute(
+      "href",
+      "/app/bookings/booking-next"
+    );
+
+    const futureSection = screen.getByRole("heading", { name: "Rezervări viitoare" }).parentElement!;
+    expect(within(futureSection).getByText("Camera Verde")).toBeVisible();
+    expect(within(futureSection).getByText("Rezervate viitor")).toBeVisible();
+    expect(within(futureSection).getByText("Mihai Ionescu")).toBeVisible();
+    expect(within(futureSection).getByText(/Se ocupă de la:/)).toHaveTextContent("10 august 2026");
+    expect(within(futureSection).getByRole("link", { name: "Vezi rezervarea" })).toHaveAttribute(
       "href",
       "/app/bookings/booking-next"
     );

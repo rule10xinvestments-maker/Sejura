@@ -64,6 +64,7 @@ export function RoomOverview({
   const roomsById = new Map(activeRooms.map((room) => [room.id, room]));
   const occupiedRooms = summaries.filter((summary) => summary.status === "occupied");
   const blockedRooms = summaries.filter((summary) => summary.status === "blocked");
+  const futureReservedRooms = summaries.filter((summary) => summary.nextBooking);
   const freeRooms = summaries.filter(
     (summary) => summary.status === "free" || summary.status === "free-now"
   );
@@ -83,7 +84,7 @@ export function RoomOverview({
         </Link>
       </div>
 
-      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         <SummaryCard
           action="Vezi toate camerele"
           href="/app/rooms"
@@ -93,14 +94,20 @@ export function RoomOverview({
         <SummaryCard
           action="Vezi camerele libere"
           href="#camere-libere"
-          label="Camere libere"
+          label="Libere acum"
           value={freeRooms.length}
         />
         <SummaryCard
           action="Vezi camerele ocupate"
           href="#camere-ocupate"
-          label="Camere ocupate"
+          label="Ocupate acum"
           value={occupiedRooms.length}
+        />
+        <SummaryCard
+          action="Vezi rezervările viitoare"
+          href="#rezervari-viitoare"
+          label="Rezervate viitor"
+          value={futureReservedRooms.length}
         />
         <SummaryCard
           action="Vezi cererile în așteptare"
@@ -163,8 +170,11 @@ export function RoomOverview({
                       <div className="mt-3 grid gap-1">
                         <p className="font-semibold">Următoarea rezervare</p>
                         <p>{nextCopy.guestName}</p>
-                        <p>Check-in: {nextCopy.checkIn}</p>
+                        <p>Perioadă: {nextCopy.stayPeriod}</p>
+                        <p>Se ocupă de la: {nextCopy.checkIn}</p>
                         <p>Se eliberează: {nextCopy.checkout}</p>
+                        {nextCopy.phone ? <p>Telefon: {nextCopy.phone}</p> : null}
+                        <p>Email: {nextCopy.email}</p>
                         <Link
                           className="button-secondary mt-2 w-full justify-center sm:w-fit"
                           href={`/app/bookings/${summary.nextBooking.id}`}
@@ -229,6 +239,50 @@ export function RoomOverview({
             <p className="mt-2 text-sm text-ink/65">Nu există camere ocupate acum.</p>
           )}
         </div>
+      </div>
+
+      <div
+        className="scroll-mt-24 rounded-md border border-line bg-mist/40 p-3"
+        id="rezervari-viitoare"
+      >
+        <h3 className="font-semibold">Rezervări viitoare</h3>
+        {futureReservedRooms.length > 0 ? (
+          <ul className="mt-3 grid gap-3 lg:grid-cols-2">
+            {futureReservedRooms.map((summary) => {
+              const room = roomsById.get(summary.roomId);
+              const booking = summary.nextBooking;
+              const copy = booking
+                ? roomOccupancyBookingCopy(booking, checkInTime, checkOutTime)
+                : null;
+              if (!room || !booking || !copy) return null;
+
+              return (
+                <li className="rounded-md border border-line bg-white p-3 text-sm" key={booking.id}>
+                  <p className="font-semibold">{room.name}</p>
+                  <p className="mt-1 w-fit rounded-md bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-900">
+                    Rezervate viitor
+                  </p>
+                  <div className="mt-3 grid gap-1">
+                    <p>{copy.guestName}</p>
+                    <p>Perioadă: {copy.stayPeriod}</p>
+                    <p>Se ocupă de la: {copy.checkIn}</p>
+                    <p>Se eliberează: {copy.checkout}</p>
+                    {copy.phone ? <p>Telefon: {copy.phone}</p> : null}
+                    <p>Email: {copy.email}</p>
+                    <Link
+                      className="button-secondary mt-2 w-full justify-center sm:w-fit"
+                      href={`/app/bookings/${booking.id}`}
+                    >
+                      Vezi rezervarea
+                    </Link>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm text-ink/65">Nu există rezervări viitoare confirmate.</p>
+        )}
       </div>
 
       <div

@@ -119,6 +119,27 @@ describe("buildRoomOccupancySummaries", () => {
     });
   });
 
+  it("keeps current confirmed bookings separate from future reserved bookings", () => {
+    const [summary] = summaries({
+      bookings: [
+        booking({
+          id: "current-today",
+          start_date: "2026-07-05",
+          end_date: "2026-07-08"
+        }),
+        booking({
+          id: "future-1",
+          start_date: "2026-08-10",
+          end_date: "2026-08-12"
+        })
+      ]
+    });
+
+    expect(summary.status).toBe("occupied");
+    expect(summary.currentBooking?.id).toBe("current-today");
+    expect(summary.nextBooking?.id).toBe("future-1");
+  });
+
   it("shows free state when there are no future confirmed bookings", () => {
     const [summary] = summaries({
       bookings: [
