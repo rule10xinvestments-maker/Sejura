@@ -1,3 +1,4 @@
+import React from "react";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app/app-shell";
 import { NotificationService } from "@/domain/notifications/service";

@@ -1,24 +1,7 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const publicPaths = new Set([
-  "/",
-  "/cazare",
-  "/guest",
-  "/sign-in",
-  "/sign-up",
-  "/manifest.webmanifest"
-]);
-
 export async function middleware(request: NextRequest) {
-  if (
-    publicPaths.has(request.nextUrl.pathname) ||
-    request.nextUrl.pathname.startsWith("/p/")
-  ) {
-    return NextResponse.next();
-  }
-
   return updateSession(request);
 }
 
