@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { SejuraLogo } from "@/components/brand/sejura-logo";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function MapPinIcon() {
   return (
@@ -35,7 +36,13 @@ const ownerHighlights = [
   "Raspunzi mai usor la cereri"
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = createSupabaseServerClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  const isAuthenticated = Boolean(user);
+
   return (
     <main className="relative min-h-[100svh] overflow-hidden bg-[#f4f1e8]">
       <Image
@@ -54,8 +61,11 @@ export default function HomePage() {
       <section className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col px-4 pb-5 pt-4 sm:px-6 sm:pb-8 sm:pt-6">
         <nav className="flex items-center justify-between gap-3">
           <SejuraLogo size="sm" />
-          <Link className="button-secondary min-h-10 px-4" href="/sign-in">
-            Intră în cont
+          <Link
+            className="button-secondary min-h-10 px-4"
+            href={isAuthenticated ? "/app" : "/sign-in"}
+          >
+            {isAuthenticated ? "Panou" : "Intră în cont"}
           </Link>
         </nav>
 
