@@ -1,7 +1,7 @@
 import type { Room } from "@/domain/rooms/types";
 import type { BookingRecord, RoomBlockRecord } from "@/domain/bookings/types";
 
-export type OccupancyCellStatus = "free" | "occupied" | "pending" | "blocked";
+export type OccupancyCellStatus = "free" | "occupied" | "blocked";
 
 export type OccupancyCell = {
   date: string;
@@ -46,14 +46,19 @@ export function buildRoomOccupancyCalendar(input: {
 }) {
   const dates = dateRange(input.startDate, input.daysCount);
   const roomIds = new Set(input.rooms.map((room) => room.id));
+  const ownerIds = new Set(input.rooms.map((room) => room.owner_id));
   const activeBookings = input.bookings.filter(
     (booking) =>
       roomIds.has(booking.room_id) &&
+      ownerIds.has(booking.owner_id) &&
       !booking.deleted_at &&
-      (booking.status === "confirmed" || booking.status === "pending")
+      booking.status === "confirmed"
   );
   const activeBlocks = input.roomBlocks.filter(
-    (block) => roomIds.has(block.room_id) && !block.deleted_at
+    (block) =>
+      roomIds.has(block.room_id) &&
+      ownerIds.has(block.owner_id) &&
+      !block.deleted_at
   );
 
   const rows: RoomOccupancyRow[] = input.rooms.map((room) => ({
@@ -92,23 +97,6 @@ export function buildRoomOccupancyCalendar(input: {
         };
       }
 
-      const pending =
-        activeBookings.find(
-          (booking) =>
-            booking.room_id === room.id &&
-            booking.status === "pending" &&
-            overlapsNight(date, booking.start_date, booking.end_date)
-        ) ?? null;
-      if (pending) {
-        return {
-          date,
-          status: "pending",
-          label: "In asteptare",
-          booking: pending,
-          block: null
-        };
-      }
-
       return {
         date,
         status: "free",
@@ -121,4 +109,3 @@ export function buildRoomOccupancyCalendar(input: {
 
   return { dates, rows };
 }
-

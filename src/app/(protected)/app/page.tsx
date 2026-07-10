@@ -1,4 +1,5 @@
 import Link from "next/link";
+import React from "react";
 import { RoomOverview } from "@/components/dashboard/room-overview";
 import {
   buildRoomOccupancySummaries,
@@ -47,6 +48,9 @@ export default async function DashboardPage() {
       <section className="grid gap-2 sm:grid-cols-3">
         <Link className="button-primary min-h-11 justify-center" href="/app/rooms">
           Camere
+        </Link>
+        <Link className="button-secondary min-h-11 justify-center" href="/app/calendar">
+          Vezi calendarul intern
         </Link>
         <Link className="button-secondary min-h-11 justify-center" href="/app/bookings">
           Rezervari

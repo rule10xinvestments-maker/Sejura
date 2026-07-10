@@ -99,14 +99,14 @@ describe("buildRoomOccupancyCalendar", () => {
     ]);
   });
 
-  it("marks pending bookings as pending, not occupied", () => {
+  it("keeps pending bookings out of occupied calendar cells", () => {
     const result = calendar({
       bookings: [booking({ status: "pending", confirmed_at: null })]
     });
 
     expect(result.rows[0].cells[0]).toMatchObject({
-      status: "pending",
-      label: "In asteptare"
+      status: "free",
+      label: "Liber"
     });
   });
 
@@ -128,7 +128,7 @@ describe("buildRoomOccupancyCalendar", () => {
           id: "other-owner-booking",
           owner_id: "owner-2",
           property_id: "property-2",
-          room_id: "other-room"
+          room_id: "room-1"
         })
       ]
     });
@@ -152,14 +152,24 @@ describe("buildRoomOccupancyCalendar", () => {
         booking({
           id: "booking-2",
           room_id: "room-2",
-          status: "pending",
-          confirmed_at: null
+          status: "confirmed"
         })
       ]
     });
 
     expect(result.rows[0].cells[1].status).toBe("occupied");
-    expect(result.rows[1].cells[1].status).toBe("pending");
+    expect(result.rows[1].cells[1].status).toBe("occupied");
+  });
+
+  it("ignores cancelled and rejected bookings", () => {
+    const result = calendar({
+      bookings: [
+        booking({ id: "cancelled", status: "cancelled", cancelled_at: "2026-06-11T00:00:00.000Z" }),
+        booking({ id: "rejected", status: "rejected", rejected_at: "2026-06-11T00:00:00.000Z" })
+      ]
+    });
+
+    expect(result.rows[0].cells.every((cell) => cell.status === "free")).toBe(true);
   });
 
   it("marks blocked dates when room blocks are present", () => {
@@ -171,5 +181,17 @@ describe("buildRoomOccupancyCalendar", () => {
       label: "Blocat"
     });
   });
-});
 
+  it("ignores room blocks that belong to another owner", () => {
+    const result = calendar({
+      roomBlocks: [
+        block({
+          owner_id: "owner-2",
+          property_id: "property-2"
+        })
+      ]
+    });
+
+    expect(result.rows[0].cells.every((cell) => cell.status === "free")).toBe(true);
+  });
+});
