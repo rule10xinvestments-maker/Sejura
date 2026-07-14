@@ -9,7 +9,8 @@ import { bookingStatusLabels } from "@/domain/bookings/status-labels";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
 import { GoogleCalendarService } from "@/domain/google-calendar/service";
 import { NotificationService } from "@/domain/notifications/service";
-import { getPrimaryProperty } from "@/domain/properties/service";
+import { propertyScopedHref } from "@/domain/properties/navigation";
+import { getSelectedProperty } from "@/domain/properties/service";
 import { listRooms } from "@/domain/rooms/service";
 import { getCurrentOwnerId } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -17,6 +18,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 type SearchParams = {
   error?: string;
   message?: string;
+  propertyId?: string;
 };
 
 function pageMessage(key?: string) {
@@ -42,7 +44,7 @@ export default async function BookingsPage({
 }) {
   const supabase = createSupabaseServerClient();
   const ownerId = await getCurrentOwnerId(supabase);
-  const property = await getPrimaryProperty(supabase, ownerId);
+  const property = await getSelectedProperty(supabase, ownerId, searchParams?.propertyId);
   const rooms = property ? await listRooms(supabase, ownerId, property.id) : [];
   const repository = new SupabaseBookingRepository(supabase);
   const bookingService = new BookingService(
@@ -50,7 +52,9 @@ export default async function BookingsPage({
     new GoogleCalendarService(supabase),
     new NotificationService(supabase)
   );
-  const bookings = await bookingService.listBookings({ ownerId });
+  const bookings = property
+    ? await bookingService.listBookings({ ownerId, propertyId: property.id })
+    : [];
   const sortedBookings = [...bookings].sort((a, b) => {
     if (a.status === "pending" && b.status !== "pending") return -1;
     if (a.status !== "pending" && b.status === "pending") return 1;
@@ -67,7 +71,12 @@ export default async function BookingsPage({
     const parsed = bookingFormSchema.safeParse(Object.fromEntries(formData));
 
     if (!parsed.success) {
-      redirect("/app/bookings?error=invalid");
+      redirect(
+        propertyScopedHref(
+          "/app/bookings?error=invalid",
+          String(formData.get("propertyId") ?? "")
+        )
+      );
     }
 
     const service = new BookingService(
@@ -85,15 +94,15 @@ export default async function BookingsPage({
     } catch (error) {
       if (error instanceof BookingDomainError && error.code === "NOT_AVAILABLE") {
         if (error.message.toLowerCase().includes("rezervare confirmata")) {
-          redirect("/app/bookings?error=conflict");
+          redirect(propertyScopedHref("/app/bookings?error=conflict", parsed.data.propertyId));
         }
-        redirect("/app/bookings?error=unavailable");
+        redirect(propertyScopedHref("/app/bookings?error=unavailable", parsed.data.propertyId));
       }
-      redirect("/app/bookings?error=invalid");
+      redirect(propertyScopedHref("/app/bookings?error=invalid", parsed.data.propertyId));
     }
 
     revalidatePath("/app/bookings");
-    redirect("/app/bookings?message=saved");
+    redirect(propertyScopedHref("/app/bookings?message=saved", parsed.data.propertyId));
   }
 
   const successMessage = pageMessage(searchParams?.message);
@@ -154,7 +163,10 @@ export default async function BookingsPage({
             <p className="text-sm text-ink/70">
               Adauga o camera inainte sa salvezi rezervari.
             </p>
-            <Link className="button-secondary mt-3 inline-flex" href="/app/rooms">
+            <Link
+              className="button-secondary mt-3 inline-flex"
+              href={propertyScopedHref("/app/rooms", property.id)}
+            >
               Adauga camera
             </Link>
           </div>

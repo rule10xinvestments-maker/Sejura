@@ -16,7 +16,7 @@ export type BookingRepository = {
   ): Promise<Database["public"]["Tables"]["property_settings"]["Row"] | null>;
   getRoom(ownerId: string, propertyId: string, roomId: string): Promise<Room | null>;
   listRooms(ownerId: string, propertyId: string): Promise<Room[]>;
-  listBookings(ownerId: string): Promise<BookingRecord[]>;
+  listBookings(ownerId: string, propertyId?: string): Promise<BookingRecord[]>;
   getBooking(ownerId: string, bookingId: string): Promise<BookingRecord | null>;
   listBookingEvents(ownerId: string, bookingId: string): Promise<BookingEventRecord[]>;
   listBlockingBookings(input: {

@@ -47,6 +47,7 @@ export function PropertyForm({ property, action }: PropertyFormProps) {
 
   return (
     <form className="panel space-y-4" onSubmit={onSubmit}>
+      <input name="property_id" type="hidden" value={property?.id ?? ""} />
       <label className="block space-y-1">
         <span className="label">Nume proprietate</span>
         <input
@@ -228,7 +229,7 @@ export function PropertyForm({ property, action }: PropertyFormProps) {
       ) : null}
 
       <button className="button-primary w-full sm:w-auto" disabled={isPending} type="submit">
-        {isPending ? "Se salveaza..." : "Salveaza proprietatea"}
+        {isPending ? "Se salveaza..." : "Salvează proprietatea"}
       </button>
     </form>
   );

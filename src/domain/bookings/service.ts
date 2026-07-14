@@ -133,9 +133,9 @@ export class BookingService {
     this.availabilityService = new AvailabilityService(repository);
   }
 
-  async listBookings(authContext: AuthContext) {
+  async listBookings(authContext: AuthContext & { propertyId?: string }) {
     const { ownerId } = normalizeAuthContext(authContext);
-    return this.repository.listBookings(ownerId);
+    return this.repository.listBookings(ownerId, authContext.propertyId);
   }
 
   async getBooking(bookingId: string, authContext: AuthContext) {
@@ -564,9 +564,12 @@ export class BookingService {
 export class RoomBlockService {
   constructor(private repository: BookingRepository) {}
 
-  async listRoomBlocks(authContext: AuthContext) {
+  async listRoomBlocks(authContext: AuthContext & { propertyId?: string }) {
     const { ownerId } = normalizeAuthContext(authContext);
-    return this.repository.listRoomBlocks({ ownerId });
+    return this.repository.listRoomBlocks({
+      ownerId,
+      propertyId: authContext.propertyId
+    });
   }
 
   async createRoomBlock(input: RoomBlockInput, authContext: AuthContext) {

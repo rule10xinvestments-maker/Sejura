@@ -1,7 +1,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { SettingsPanel } from "@/components/settings/settings-panel";
-import { getPrimaryProperty } from "@/domain/properties/service";
+import { propertyScopedHref } from "@/domain/properties/navigation";
+import { getSelectedProperty } from "@/domain/properties/service";
 import {
   getPropertySettings,
   keepAutoConfirmationDisabled,
@@ -11,6 +12,7 @@ import { getCurrentOwnerId } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type SearchParams = {
+  propertyId?: string;
   status?: string;
 };
 
@@ -37,7 +39,7 @@ export default async function SettingsPage({
 }) {
   const supabase = createSupabaseServerClient();
   const ownerId = await getCurrentOwnerId(supabase);
-  const property = await getPrimaryProperty(supabase, ownerId);
+  const property = await getSelectedProperty(supabase, ownerId, searchParams?.propertyId);
   const settings = property
     ? await getPropertySettings(supabase, ownerId, property.id)
     : null;
@@ -59,11 +61,16 @@ export default async function SettingsPage({
         enabled
       );
     } catch {
-      redirect("/app/settings?status=error");
+      redirect(propertyScopedHref("/app/settings?status=error", propertyId));
     }
 
     revalidatePath("/app/settings");
-    redirect(`/app/settings?status=${enabled ? "ai-enabled" : "ai-disabled"}`);
+    redirect(
+      propertyScopedHref(
+        `/app/settings?status=${enabled ? "ai-enabled" : "ai-disabled"}`,
+        propertyId
+      )
+    );
   }
 
   async function togglePublicBookings(formData: FormData) {
@@ -83,11 +90,16 @@ export default async function SettingsPage({
         enabled
       );
     } catch {
-      redirect("/app/settings?status=error");
+      redirect(propertyScopedHref("/app/settings?status=error", propertyId));
     }
 
     revalidatePath("/app/settings");
-    redirect(`/app/settings?status=${enabled ? "public-enabled" : "public-disabled"}`);
+    redirect(
+      propertyScopedHref(
+        `/app/settings?status=${enabled ? "public-enabled" : "public-disabled"}`,
+        propertyId
+      )
+    );
   }
 
   async function toggleCalendarRequired(formData: FormData) {
@@ -107,12 +119,15 @@ export default async function SettingsPage({
         enabled
       );
     } catch {
-      redirect("/app/settings?status=error");
+      redirect(propertyScopedHref("/app/settings?status=error", propertyId));
     }
 
     revalidatePath("/app/settings");
     redirect(
-      `/app/settings?status=${enabled ? "calendar-required" : "calendar-optional"}`
+      propertyScopedHref(
+        `/app/settings?status=${enabled ? "calendar-required" : "calendar-optional"}`,
+        propertyId
+      )
     );
   }
 
@@ -126,11 +141,11 @@ export default async function SettingsPage({
     try {
       await keepAutoConfirmationDisabled(serverSupabase, serverOwnerId, propertyId);
     } catch {
-      redirect("/app/settings?status=error");
+      redirect(propertyScopedHref("/app/settings?status=error", propertyId));
     }
 
     revalidatePath("/app/settings");
-    redirect("/app/settings?status=auto-disabled");
+    redirect(propertyScopedHref("/app/settings?status=auto-disabled", propertyId));
   }
 
   const message = statusMessage(searchParams?.status);

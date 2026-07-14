@@ -60,7 +60,7 @@ describe("PropertyForm", () => {
 
     render(<PropertyForm action={action} property={null} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Salveaza proprietatea" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvează proprietatea" }));
 
     await waitFor(() => {
       expect(screen.getByText("Adauga numele proprietatii.")).toBeVisible();
@@ -83,7 +83,7 @@ describe("PropertyForm", () => {
 
     render(<PropertyForm action={action} property={null} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Salveaza proprietatea" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvează proprietatea" }));
 
     await waitFor(() => {
       expect(screen.getByText("Link public rezervat")).toBeVisible();

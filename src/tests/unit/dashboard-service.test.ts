@@ -65,6 +65,7 @@ describe("dashboard service", () => {
     const data = await loadDashboardData(
       emptyDashboardSupabase(),
       "owner-1",
+      null,
       vi.fn()
     );
 

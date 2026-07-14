@@ -73,9 +73,12 @@ export class MemoryBookingRepository implements BookingRepository {
     );
   }
 
-  async listBookings(ownerId: string) {
+  async listBookings(ownerId: string, propertyId?: string) {
     return this.bookings.filter(
-      (booking) => booking.owner_id === ownerId && !booking.deleted_at
+      (booking) =>
+        booking.owner_id === ownerId &&
+        !booking.deleted_at &&
+        (!propertyId || booking.property_id === propertyId)
     );
   }
 

@@ -2,7 +2,7 @@ import { getActivationStatus } from "@/domain/activation/service";
 import { BookingService, RoomBlockService } from "@/domain/bookings/service";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
 import { GoogleCalendarService } from "@/domain/google-calendar/service";
-import { getPrimaryProperty } from "@/domain/properties/service";
+import { getSelectedProperty } from "@/domain/properties/service";
 import { listRooms } from "@/domain/rooms/service";
 import { getPropertySettings } from "@/domain/settings/service";
 import type { AppSupabaseClient } from "@/lib/supabase/types";
@@ -110,12 +110,13 @@ export async function getOwnerNotificationSummary(
 export async function loadDashboardData(
   supabase: AppSupabaseClient,
   ownerId: string,
+  propertyId?: string | null,
   logger: SafeLogger = serverLog
 ) {
   const property = await safeLoad(
     null,
-    "primary property failed",
-    () => getPrimaryProperty(supabase, ownerId),
+    "selected property failed",
+    () => getSelectedProperty(supabase, ownerId, propertyId),
     logger
   );
 
@@ -137,15 +138,18 @@ export async function loadDashboardData(
       )
     : null;
 
-  const bookings = await safeLoad(
-    [],
-    "booking summary failed",
-    () =>
-      new BookingService(new SupabaseBookingRepository(supabase)).listBookings({
-        ownerId
-      }),
-    logger
-  );
+  const bookings = property
+    ? await safeLoad(
+        [],
+        "booking summary failed",
+        () =>
+          new BookingService(new SupabaseBookingRepository(supabase)).listBookings({
+            ownerId,
+            propertyId: property.id
+          }),
+        logger
+      )
+    : [];
 
   const roomBlocks = property
     ? await safeLoad(
@@ -153,7 +157,8 @@ export async function loadDashboardData(
         "room blocks failed",
         () =>
           new RoomBlockService(new SupabaseBookingRepository(supabase)).listRoomBlocks({
-            ownerId
+            ownerId,
+            propertyId: property.id
           }),
         logger
       )

@@ -79,13 +79,19 @@ export class SupabaseBookingRepository implements BookingRepository {
     return data ?? [];
   }
 
-  async listBookings(ownerId: string) {
-    const { data, error } = await this.supabase
+  async listBookings(ownerId: string, propertyId?: string) {
+    let query = this.supabase
       .from("bookings")
       .select("*")
       .eq("owner_id", ownerId)
       .is("deleted_at", null)
       .order("start_date", { ascending: true });
+
+    if (propertyId) {
+      query = query.eq("property_id", propertyId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data ?? [];

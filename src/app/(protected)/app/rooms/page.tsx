@@ -7,7 +7,8 @@ import {
 } from "@/domain/bookings/room-occupancy-summary";
 import { BookingService, RoomBlockService } from "@/domain/bookings/service";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
-import { getPrimaryProperty } from "@/domain/properties/service";
+import { propertyScopedHref } from "@/domain/properties/navigation";
+import { getSelectedProperty } from "@/domain/properties/service";
 import {
   createRoom,
   deactivateRoom,
@@ -30,18 +31,24 @@ function getRoomPageMessage(messageKey?: string) {
 export default async function RoomsPage({
   searchParams
 }: {
-  searchParams?: { message?: string };
+  searchParams?: { message?: string; propertyId?: string };
 }) {
   const supabase = createSupabaseServerClient();
   const ownerId = await getCurrentOwnerId(supabase);
-  const property = await getPrimaryProperty(supabase, ownerId);
+  const property = await getSelectedProperty(supabase, ownerId, searchParams?.propertyId);
   const rooms = property ? await listRooms(supabase, ownerId, property.id) : [];
   const repository = new SupabaseBookingRepository(supabase);
   const bookings = property
-    ? await new BookingService(repository).listBookings({ ownerId })
+    ? await new BookingService(repository).listBookings({
+        ownerId,
+        propertyId: property.id
+      })
     : [];
   const roomBlocks = property
-    ? await new RoomBlockService(repository).listRoomBlocks({ ownerId })
+    ? await new RoomBlockService(repository).listRoomBlocks({
+        ownerId,
+        propertyId: property.id
+      })
     : [];
   const occupancySummaries = property
     ? buildRoomOccupancySummaries({
@@ -120,7 +127,9 @@ export default async function RoomsPage({
       String(formData.get("room_id"))
     );
     revalidatePath("/app/rooms");
-    redirect("/app/rooms?message=room-deactivated");
+    redirect(
+      propertyScopedHref("/app/rooms?message=room-deactivated", String(formData.get("property_id")))
+    );
   }
 
   return (

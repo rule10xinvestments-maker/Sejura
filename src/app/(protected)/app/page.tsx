@@ -6,10 +6,15 @@ import {
   todayInBucharest
 } from "@/domain/bookings/room-occupancy-summary";
 import { loadDashboardData } from "@/domain/dashboard/service";
+import { propertyScopedHref } from "@/domain/properties/navigation";
 import { getCurrentOwnerId } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams
+}: {
+  searchParams?: { propertyId?: string };
+}) {
   const supabase = createSupabaseServerClient();
   const ownerId = await getCurrentOwnerId(supabase);
   const {
@@ -20,7 +25,7 @@ export default async function DashboardPage() {
     googleConnection,
     notifications,
     activation
-  } = await loadDashboardData(supabase, ownerId);
+  } = await loadDashboardData(supabase, ownerId, searchParams?.propertyId);
   const occupancySummaries = property
     ? buildRoomOccupancySummaries({
         rooms,
@@ -46,13 +51,22 @@ export default async function DashboardPage() {
       </div>
 
       <section className="grid gap-2 sm:grid-cols-3">
-        <Link className="button-primary min-h-11 justify-center" href="/app/rooms">
+        <Link
+          className="button-primary min-h-11 justify-center"
+          href={propertyScopedHref("/app/rooms", property?.id)}
+        >
           Camere
         </Link>
-        <Link className="button-secondary min-h-11 justify-center" href="/app/calendar">
+        <Link
+          className="button-secondary min-h-11 justify-center"
+          href={propertyScopedHref("/app/calendar", property?.id)}
+        >
           Vezi calendarul intern
         </Link>
-        <Link className="button-secondary min-h-11 justify-center" href="/app/bookings">
+        <Link
+          className="button-secondary min-h-11 justify-center"
+          href={propertyScopedHref("/app/bookings", property?.id)}
+        >
           Rezervari
         </Link>
         {property ? (
@@ -101,7 +115,10 @@ export default async function DashboardPage() {
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xl font-bold">{pendingBookings}</p>
             {pendingBookings > 0 ? (
-              <Link className="button-primary min-h-10 px-3 py-1" href="/app/bookings">
+              <Link
+                className="button-primary min-h-10 px-3 py-1"
+                href={propertyScopedHref("/app/bookings", property?.id)}
+              >
                 Confirma sau respinge
               </Link>
             ) : null}
@@ -154,13 +171,22 @@ export default async function DashboardPage() {
           </ul>
         )}
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <Link className="button-primary" href="/app/onboarding">
+          <Link
+            className="button-primary"
+            href={propertyScopedHref("/app/onboarding", property?.id)}
+          >
             Continua configurarea
           </Link>
-          <Link className="button-secondary" href="/app/rooms">
+          <Link
+            className="button-secondary"
+            href={propertyScopedHref("/app/rooms", property?.id)}
+          >
             Gestioneaza camere
           </Link>
-          <Link className="button-secondary" href="/app/bookings">
+          <Link
+            className="button-secondary"
+            href={propertyScopedHref("/app/bookings", property?.id)}
+          >
             Vezi rezervari
           </Link>
           {property ? (

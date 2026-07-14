@@ -44,10 +44,31 @@ describe("DashboardPage", () => {
   });
 
   it("shows a dashboard shortcut to the internal calendar", async () => {
-    render(await DashboardPage());
+    render(await DashboardPage({ searchParams: {} }));
 
     expect(
       screen.getByRole("link", { name: "Vezi calendarul intern" })
-    ).toHaveAttribute("href", "/app/calendar");
+    ).toHaveAttribute("href", "/app/calendar?propertyId=property-1");
+  });
+
+  it("keeps dashboard shortcuts scoped to the selected property", async () => {
+    render(await DashboardPage({ searchParams: { propertyId: "property-1" } }));
+
+    expect(dashboardMocks.loadDashboardData).toHaveBeenCalledWith(
+      {},
+      "owner-1",
+      "property-1"
+    );
+    expect(screen.getByRole("link", { name: "Camere" })).toHaveAttribute(
+      "href",
+      "/app/rooms?propertyId=property-1"
+    );
+    expect(
+      screen.getByRole("link", { name: "Vezi calendarul intern" })
+    ).toHaveAttribute("href", "/app/calendar?propertyId=property-1");
+    expect(screen.getByRole("link", { name: "Rezervari" })).toHaveAttribute(
+      "href",
+      "/app/bookings?propertyId=property-1"
+    );
   });
 });

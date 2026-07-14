@@ -6,7 +6,8 @@ import { roomBlockSchema } from "@/domain/bookings/schemas";
 import { BookingService, RoomBlockService } from "@/domain/bookings/service";
 import { roomBlockCopy } from "@/domain/bookings/room-occupancy-summary";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
-import { getPrimaryProperty } from "@/domain/properties/service";
+import { propertyScopedHref } from "@/domain/properties/navigation";
+import { getSelectedProperty } from "@/domain/properties/service";
 import { listRooms } from "@/domain/rooms/service";
 import { getCurrentOwnerId } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -14,6 +15,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 type SearchParams = {
   error?: string;
   message?: string;
+  propertyId?: string;
   start?: string;
 };
 
@@ -45,13 +47,17 @@ export default async function CalendarPage({
 }) {
   const supabase = createSupabaseServerClient();
   const ownerId = await getCurrentOwnerId(supabase);
-  const property = await getPrimaryProperty(supabase, ownerId);
+  const property = await getSelectedProperty(supabase, ownerId, searchParams?.propertyId);
   const rooms = property ? await listRooms(supabase, ownerId, property.id) : [];
   const repository = new SupabaseBookingRepository(supabase);
   const bookingService = new BookingService(repository);
   const blockService = new RoomBlockService(repository);
-  const bookings = await bookingService.listBookings({ ownerId });
-  const roomBlocks = await blockService.listRoomBlocks({ ownerId });
+  const bookings = property
+    ? await bookingService.listBookings({ ownerId, propertyId: property.id })
+    : [];
+  const roomBlocks = property
+    ? await blockService.listRoomBlocks({ ownerId, propertyId: property.id })
+    : [];
   const roomNames = new Map(rooms.map((room) => [room.id, room.name]));
   const startDate = safeStartDate(searchParams?.start);
   const daysCount = 30;
@@ -66,7 +72,12 @@ export default async function CalendarPage({
     const parsed = roomBlockSchema.safeParse(Object.fromEntries(formData));
 
     if (!parsed.success) {
-      redirect("/app/calendar?error=invalid");
+      redirect(
+        propertyScopedHref(
+          "/app/calendar?error=invalid",
+          String(formData.get("propertyId") ?? "")
+        )
+      );
     }
 
     const service = new RoomBlockService(
@@ -74,7 +85,9 @@ export default async function CalendarPage({
     );
     await service.createRoomBlock(parsed.data, { ownerId: serverOwnerId });
     revalidatePath("/app/calendar");
-    redirect("/app/calendar?message=blocked");
+    redirect(
+      propertyScopedHref("/app/calendar?message=blocked", parsed.data.propertyId)
+    );
   }
 
   async function deleteBlock(formData: FormData) {
@@ -89,7 +102,12 @@ export default async function CalendarPage({
       ownerId: serverOwnerId
     });
     revalidatePath("/app/calendar");
-    redirect("/app/calendar?message=removed");
+    redirect(
+      propertyScopedHref(
+        "/app/calendar?message=removed",
+        String(formData.get("propertyId") ?? "")
+      )
+    );
   }
 
   if (!property) {
@@ -138,13 +156,22 @@ export default async function CalendarPage({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link className="button-secondary" href={`/app/calendar?start=${previousStart}`}>
+            <Link
+              className="button-secondary"
+              href={propertyScopedHref(`/app/calendar?start=${previousStart}`, property.id)}
+            >
               Perioada anterioară
             </Link>
-            <Link className="button-secondary" href="/app/calendar">
+            <Link
+              className="button-secondary"
+              href={propertyScopedHref("/app/calendar", property.id)}
+            >
               Astăzi
             </Link>
-            <Link className="button-secondary" href={`/app/calendar?start=${nextStart}`}>
+            <Link
+              className="button-secondary"
+              href={propertyScopedHref(`/app/calendar?start=${nextStart}`, property.id)}
+            >
               Perioada următoare
             </Link>
           </div>
@@ -219,6 +246,7 @@ export default async function CalendarPage({
                   </div>
                   <form action={deleteBlock}>
                     <input name="blockId" type="hidden" value={block.id} />
+                    <input name="propertyId" type="hidden" value={property.id} />
                     <button className="button-secondary" type="submit">
                       Șterge blocarea
                     </button>
