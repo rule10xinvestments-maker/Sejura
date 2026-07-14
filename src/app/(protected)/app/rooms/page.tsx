@@ -13,6 +13,7 @@ import {
   createRoom,
   deactivateRoom,
   listRooms,
+  safeDeleteRoom,
   updateRoom
 } from "@/domain/rooms/service";
 import type { RoomFormState } from "@/domain/rooms/form-state";
@@ -23,6 +24,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 function getRoomPageMessage(messageKey?: string) {
   if (messageKey === "room-deactivated") {
     return "Camera a fost dezactivat\u0103.";
+  }
+  if (messageKey === "room-deleted") {
+    return "Camera a fost ștearsă.";
+  }
+  if (messageKey === "room-archived") {
+    return "Camera are rezervări sau istoric. Am dezactivat camera pentru a păstra istoricul.";
   }
 
   return null;
@@ -132,6 +139,29 @@ export default async function RoomsPage({
     );
   }
 
+  async function deleteRoom(formData: FormData) {
+    "use server";
+
+    const serverSupabase = createSupabaseServerClient();
+    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
+    const propertyId = String(formData.get("property_id"));
+    const result = await safeDeleteRoom(
+      serverSupabase,
+      serverOwnerId,
+      propertyId,
+      String(formData.get("room_id"))
+    );
+
+    revalidatePath("/app");
+    revalidatePath("/app/rooms");
+    redirect(
+      propertyScopedHref(
+        `/app/rooms?message=${result === "deleted" ? "room-deleted" : "room-archived"}`,
+        propertyId
+      )
+    );
+  }
+
   return (
     <RoomsList
       property={property}
@@ -142,6 +172,7 @@ export default async function RoomsPage({
       successMessage={getRoomPageMessage(searchParams?.message)}
       saveAction={saveRoom}
       deactivateAction={deactivate}
+      deleteAction={deleteRoom}
     />
   );
 }

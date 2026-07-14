@@ -22,6 +22,7 @@ type RoomsListProps = {
     formData: FormData
   ) => Promise<RoomFormState>;
   deactivateAction: (formData: FormData) => void | Promise<void>;
+  deleteAction: (formData: FormData) => void | Promise<void>;
 };
 
 export function RoomsList({
@@ -32,7 +33,8 @@ export function RoomsList({
   checkOutTime,
   successMessage,
   saveAction,
-  deactivateAction
+  deactivateAction,
+  deleteAction
 }: RoomsListProps) {
   if (!property) {
     return (
@@ -118,15 +120,50 @@ export function RoomsList({
                   {room.status === "active" ? "Activa" : "Inactiva"}
                 </p>
               </div>
-              {room.status === "active" ? (
-                <form action={deactivateAction}>
-                  <input name="property_id" type="hidden" value={property.id} />
-                  <input name="room_id" type="hidden" value={room.id} />
-                  <button className="button-secondary min-h-11 px-3 py-2" type="submit">
-                    Dezactiveaza camera
-                  </button>
-                </form>
-              ) : null}
+              <div className="grid gap-2 sm:min-w-56">
+                {room.status === "active" ? (
+                  <form action={deactivateAction}>
+                    <input name="property_id" type="hidden" value={property.id} />
+                    <input name="room_id" type="hidden" value={room.id} />
+                    <button className="button-secondary min-h-11 w-full px-3 py-2" type="submit">
+                      Dezactiveaza camera
+                    </button>
+                  </form>
+                ) : null}
+                <details className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950">
+                  <summary className="cursor-pointer font-semibold">
+                    Șterge camera
+                  </summary>
+                  <div className="mt-3 grid gap-3">
+                    <div>
+                      <p className="font-semibold">
+                        Ești sigur că vrei să ștergi această cameră?
+                      </p>
+                      <p className="mt-1 text-red-900/80">
+                        Această acțiune nu va șterge istoricul rezervărilor.
+                      </p>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <form action={deleteAction}>
+                        <input name="property_id" type="hidden" value={property.id} />
+                        <input name="room_id" type="hidden" value={room.id} />
+                        <button
+                          className="min-h-11 w-full rounded-md border border-red-300 bg-white px-3 py-2 font-semibold text-red-800"
+                          type="submit"
+                        >
+                          Confirmă ștergerea
+                        </button>
+                      </form>
+                      <button
+                        className="button-secondary min-h-11 w-full px-3 py-2"
+                        type="button"
+                      >
+                        Renunță
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
             </div>
             {room.status === "active" && occupancy ? (
               <section className="mt-4 rounded-md border border-line bg-mist/40 p-3">

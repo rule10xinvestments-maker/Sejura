@@ -81,6 +81,7 @@ describe("RoomsList", () => {
     render(
       <RoomsList
         deactivateAction={vi.fn()}
+        deleteAction={vi.fn()}
         property={null}
         rooms={[]}
         saveAction={vi.fn()}
@@ -99,6 +100,7 @@ describe("RoomsList", () => {
     render(
       <RoomsList
         deactivateAction={vi.fn()}
+        deleteAction={vi.fn()}
         property={property}
         rooms={[]}
         saveAction={vi.fn()}
@@ -121,6 +123,7 @@ describe("RoomsList", () => {
     render(
       <RoomsList
         deactivateAction={vi.fn()}
+        deleteAction={vi.fn()}
         property={property}
         rooms={[room]}
         saveAction={vi.fn()}
@@ -136,6 +139,21 @@ describe("RoomsList", () => {
     expect(
       screen.getByRole("button", { name: "Dezactiveaza camera" })
     ).toHaveAttribute("type", "submit");
+    expect(screen.getByText("Șterge camera")).toBeVisible();
+    fireEvent.click(screen.getByText("Șterge camera"));
+    expect(
+      screen.getByText("Ești sigur că vrei să ștergi această cameră?")
+    ).toBeVisible();
+    expect(
+      screen.getByText("Această acțiune nu va șterge istoricul rezervărilor.")
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Confirmă ștergerea" })
+    ).toHaveAttribute("type", "submit");
+    expect(screen.getByRole("button", { name: "Renunță" })).toHaveAttribute(
+      "type",
+      "button"
+    );
   });
 
   it("renders room occupancy details and booking links for owners", () => {
@@ -152,6 +170,7 @@ describe("RoomsList", () => {
         checkInTime="15:00"
         checkOutTime="11:00"
         deactivateAction={vi.fn()}
+        deleteAction={vi.fn()}
         occupancySummaries={[
           {
             roomId: room.id,

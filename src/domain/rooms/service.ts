@@ -108,3 +108,68 @@ export async function deactivateRoom(
     throw error;
   }
 }
+
+async function countRoomOperationalRecords(
+  supabase: AppSupabaseClient,
+  ownerId: string,
+  propertyId: string,
+  roomId: string
+) {
+  const bookings = await supabase
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", ownerId)
+    .eq("property_id", propertyId)
+    .eq("room_id", roomId);
+
+  if (bookings.error) {
+    throw bookings.error;
+  }
+
+  const blocks = await supabase
+    .from("room_blocks")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", ownerId)
+    .eq("property_id", propertyId)
+    .eq("room_id", roomId);
+
+  if (blocks.error) {
+    throw blocks.error;
+  }
+
+  return (bookings.count ?? 0) + (blocks.count ?? 0);
+}
+
+export async function safeDeleteRoom(
+  supabase: AppSupabaseClient,
+  ownerId: string,
+  propertyId: string,
+  roomId: string
+): Promise<"deleted" | "archived"> {
+  await assertPropertyOwned(supabase, ownerId, propertyId);
+
+  const operationalRecords = await countRoomOperationalRecords(
+    supabase,
+    ownerId,
+    propertyId,
+    roomId
+  );
+
+  if (operationalRecords > 0) {
+    await deactivateRoom(supabase, ownerId, propertyId, roomId);
+    return "archived";
+  }
+
+  const { error } = await supabase
+    .from("rooms")
+    .delete()
+    .eq("id", roomId)
+    .eq("owner_id", ownerId)
+    .eq("property_id", propertyId);
+
+  if (error) {
+    throw error;
+  }
+
+  return "deleted";
+}
