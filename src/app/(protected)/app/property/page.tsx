@@ -224,19 +224,9 @@ export default async function PropertyPage({
         <p className="mt-1 text-sm text-ink/65">
           Adaugă detaliile pensiunii, apoi configurează camerele și pagina publică.
         </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <Link
             className="button-primary min-h-11 justify-center"
-            href={
-              property
-                ? `/app/property?propertyId=${encodeURIComponent(property.id)}#detalii-proprietate`
-                : "/app/property#detalii-proprietate"
-            }
-          >
-            Completează detaliile
-          </Link>
-          <Link
-            className="button-secondary min-h-11 justify-center"
             href={propertyScopedHref("/app/rooms", property?.id)}
           >
             Configurează camerele

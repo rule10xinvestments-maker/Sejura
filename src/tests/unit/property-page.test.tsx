@@ -110,10 +110,7 @@ describe("PropertyPage", () => {
         "Adaugă detaliile pensiunii, apoi configurează camerele și pagina publică."
       )
     ).toBeVisible();
-    expect(screen.getByRole("link", { name: "Completează detaliile" })).toHaveAttribute(
-      "href",
-      "/app/property?propertyId=property-1#detalii-proprietate"
-    );
+    expect(screen.queryByRole("link", { name: "Completează detaliile" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Configurează camerele" })).toHaveAttribute(
       "href",
       "/app/rooms?propertyId=property-1"

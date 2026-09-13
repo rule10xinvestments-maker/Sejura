@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { SejuraLogo } from "@/components/brand/sejura-logo";
 import { propertyScopedHref } from "@/domain/properties/navigation";
 import { signOut } from "@/lib/auth/actions";
@@ -23,6 +23,7 @@ export function AppShell({
   notificationCounts?: { unread: number; critical: number };
 }) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const propertyId = searchParams.get("propertyId");
   const logoHref = propertyScopedHref("/app/property", propertyId);
 
@@ -53,17 +54,27 @@ export function AppShell({
         ) : null}
         <nav
           aria-label="Navigare proprietar"
-          className="mx-auto flex max-w-5xl gap-2 overflow-x-auto px-4 pb-3"
+          className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-3 [-webkit-overflow-scrolling:touch]"
         >
-          {nav.map((item) => (
-            <Link
-              className="min-h-10 whitespace-nowrap rounded-md border border-line bg-white px-3 py-2 text-sm font-medium"
-              href={propertyScopedHref(item.href, propertyId)}
-              key={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {nav.map((item) => {
+            const isActive =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+            return (
+              <Link
+                aria-current={isActive ? "page" : undefined}
+                className={
+                  isActive
+                    ? "min-h-9 whitespace-nowrap rounded-md border border-moss bg-mist px-2.5 py-1.5 text-sm font-semibold text-moss"
+                    : "min-h-9 whitespace-nowrap rounded-md border border-line bg-white px-2.5 py-1.5 text-sm font-medium text-ink/75"
+                }
+                href={propertyScopedHref(item.href, propertyId)}
+                key={item.href}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-4 sm:py-5">{children}</main>

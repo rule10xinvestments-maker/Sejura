@@ -4,10 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import { AppShell } from "@/components/app/app-shell";
 
 const appShellMocks = vi.hoisted(() => ({
+  usePathname: vi.fn(),
   useSearchParams: vi.fn()
 }));
 
 vi.mock("next/navigation", () => ({
+  usePathname: appShellMocks.usePathname,
   useSearchParams: appShellMocks.useSearchParams
 }));
 
@@ -17,6 +19,7 @@ vi.mock("@/lib/auth/actions", () => ({
 
 describe("AppShell", () => {
   it("renders the simplified owner navigation without Panou or Start", () => {
+    appShellMocks.usePathname.mockReturnValue("/app/property");
     appShellMocks.useSearchParams.mockReturnValue(new URLSearchParams());
 
     render(
@@ -52,6 +55,7 @@ describe("AppShell", () => {
   });
 
   it("preserves selected propertyId in owner nav links", () => {
+    appShellMocks.usePathname.mockReturnValue("/app/rooms");
     appShellMocks.useSearchParams.mockReturnValue(
       new URLSearchParams("propertyId=property-1")
     );
@@ -83,6 +87,27 @@ describe("AppShell", () => {
     expect(within(nav).getByRole("link", { name: "Setări" })).toHaveAttribute(
       "href",
       "/app/settings?propertyId=property-1"
+    );
+  });
+
+  it("marks the active owner nav item clearly", () => {
+    appShellMocks.usePathname.mockReturnValue("/app/bookings");
+    appShellMocks.useSearchParams.mockReturnValue(
+      new URLSearchParams("propertyId=property-1")
+    );
+
+    render(
+      <AppShell>
+        <p>Owner content</p>
+      </AppShell>
+    );
+
+    expect(screen.getByRole("link", { name: "Rezervări" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+    expect(screen.getByRole("link", { name: "Camere" })).not.toHaveAttribute(
+      "aria-current"
     );
   });
 });
