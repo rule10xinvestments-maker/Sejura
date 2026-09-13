@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { RoomsList } from "@/components/rooms/rooms-list";
 import type { BookingRecord } from "@/domain/bookings/types";
+import type { RoomPhoto } from "@/domain/photos/types";
 import type { Property } from "@/domain/properties/types";
 import type { Room } from "@/domain/rooms/types";
 
@@ -38,6 +39,28 @@ const room = {
   created_at: "2026-01-01",
   updated_at: "2026-01-01"
 } as Room;
+
+const secondRoom = {
+  ...room,
+  id: "room-2",
+  name: "Camera Albastră"
+} as Room;
+
+function roomPhoto(patch: Partial<RoomPhoto>): RoomPhoto {
+  return {
+    id: "room-photo-1",
+    owner_id: "owner-1",
+    property_id: "property-1",
+    room_id: "room-1",
+    storage_path: "owner-1/property-1/rooms/room-1/photo.jpg",
+    public_url: "https://signed.example/room-1-photo.jpg",
+    alt_text: null,
+    sort_order: 0,
+    is_cover: false,
+    created_at: "2026-01-01T00:00:00.000Z",
+    ...patch
+  };
+}
 
 function booking(patch: Partial<BookingRecord> = {}): BookingRecord {
   return {
@@ -158,9 +181,38 @@ describe("RoomsList", () => {
     expect(
       screen.getByText("Adaugă poze pentru această cameră. Pozele sunt opționale.")
     ).toBeVisible();
-    expect(screen.getAllByText("Încarcă poză")).toHaveLength(2);
+    expect(screen.getByText("Alege din galerie")).toBeVisible();
     expect(screen.getByText("Fă poză")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Încarcă poza" })).toBeVisible();
     expect(screen.getByText("Nu ai adăugat poze pentru această cameră.")).toBeVisible();
+  });
+
+  it("shows uploaded room photos only under their own room", () => {
+    render(
+      <RoomsList
+        deactivateAction={vi.fn()}
+        deleteAction={vi.fn()}
+        property={property}
+        roomPhotos={[
+          roomPhoto({
+            id: "photo-room-1",
+            room_id: "room-1",
+            public_url: "https://signed.example/verde.jpg",
+            is_cover: true
+          })
+        ]}
+        rooms={[room, secondRoom]}
+        saveAction={vi.fn()}
+      />
+    );
+
+    const roomOneCard = screen.getByText("Camera Verde").closest("article");
+    const roomTwoCard = screen.getByText("Camera Albastră").closest("article");
+
+    expect(roomOneCard?.querySelector('img[src="https://signed.example/verde.jpg"]')).not.toBeNull();
+    expect(roomOneCard).not.toHaveTextContent("Nu ai adăugat poze pentru această cameră.");
+    expect(roomTwoCard?.querySelector('img[src="https://signed.example/verde.jpg"]')).toBeNull();
+    expect(roomTwoCard).toHaveTextContent("Nu ai adăugat poze pentru această cameră.");
   });
 
   it("shows a safe fallback when room photos cannot be loaded", () => {

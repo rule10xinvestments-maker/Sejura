@@ -210,8 +210,14 @@ async function nextPropertySortOrder(
   ownerId: string,
   propertyId: string
 ) {
-  const photos = await listPropertyPhotos(supabase, ownerId, propertyId);
-  return photos.length;
+  const { data, error } = await supabase
+    .from("property_photos")
+    .select("id")
+    .eq("owner_id", ownerId)
+    .eq("property_id", propertyId);
+
+  if (error) throw error;
+  return data?.length ?? 0;
 }
 
 async function nextRoomSortOrder(
@@ -240,7 +246,7 @@ export async function uploadPropertyPhoto(
   assertSupportedPhoto(file);
   await assertPropertyOwned(supabase, ownerId, propertyId);
 
-  const existingPhotos = await listPropertyPhotos(supabase, ownerId, propertyId);
+  const existingCount = await nextPropertySortOrder(supabase, ownerId, propertyId);
   const storagePath = photoPath({ ownerId, propertyId, file });
   const upload = await supabase.storage
     .from(PHOTO_BUCKET)
@@ -255,8 +261,8 @@ export async function uploadPropertyPhoto(
       property_id: propertyId,
       storage_path: storagePath,
       public_url: storagePath,
-      sort_order: await nextPropertySortOrder(supabase, ownerId, propertyId),
-      is_cover: existingPhotos.length === 0
+      sort_order: existingCount,
+      is_cover: existingCount === 0
     })
     .select("*")
     .single();

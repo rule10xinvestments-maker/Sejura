@@ -1,3 +1,4 @@
+import { PhotoUploadForm } from "@/components/photos/photo-upload-form";
 import type { PropertyPhoto } from "@/domain/photos/types";
 import type { Property } from "@/domain/properties/types";
 
@@ -33,32 +34,9 @@ export function PropertyPhotos({
         </p>
       ) : null}
 
-      <form action={uploadAction} className="grid gap-3">
+      <PhotoUploadForm action={uploadAction} previewAlt={`Preview ${property.name}`}>
         <input name="property_id" type="hidden" value={property.id} />
-        <label className="block space-y-1">
-          <span className="label">Încarcă poză</span>
-          <input
-            accept="image/jpeg,image/png,image/webp"
-            className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-moss file:px-3 file:py-2 file:font-semibold file:text-white"
-            multiple
-            name="photos"
-            type="file"
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="label">Fă poză</span>
-          <input
-            accept="image/jpeg,image/png,image/webp"
-            capture="environment"
-            className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold file:text-moss"
-            name="photos"
-            type="file"
-          />
-        </label>
-        <button className="button-primary w-full sm:w-fit" type="submit">
-          Încarcă poză
-        </button>
-      </form>
+      </PhotoUploadForm>
 
       {photos.length > 0 ? (
         <div className="grid gap-3 sm:grid-cols-2">

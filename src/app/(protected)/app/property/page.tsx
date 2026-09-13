@@ -162,6 +162,7 @@ export default async function PropertyPage({
     revalidatePath("/app/property");
     revalidatePath("/guest");
     revalidatePath(`/p/${property?.slug}`);
+    redirect(propertyScopedHref("/app/property", propertyId));
   }
 
   async function chooseCoverPhoto(formData: FormData) {

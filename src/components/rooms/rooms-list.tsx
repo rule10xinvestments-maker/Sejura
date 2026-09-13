@@ -1,5 +1,6 @@
 ﻿import React from "react";
 import Link from "next/link";
+import { PhotoUploadForm } from "@/components/photos/photo-upload-form";
 import { RoomForm } from "@/components/rooms/room-form";
 import {
   roomBlockCopy,
@@ -328,33 +329,15 @@ export function RoomsList({
                   Adaugă poze pentru această cameră. Pozele sunt opționale.
                 </p>
               </div>
-              <form action={uploadRoomPhotosAction} className="mt-3 grid gap-3">
-                <input name="property_id" type="hidden" value={property.id} />
-                <input name="room_id" type="hidden" value={room.id} />
-                <label className="block space-y-1">
-                  <span className="label">Încarcă poză</span>
-                  <input
-                    accept="image/jpeg,image/png,image/webp"
-                    className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-moss file:px-3 file:py-2 file:font-semibold file:text-white"
-                    multiple
-                    name="photos"
-                    type="file"
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="label">Fă poză</span>
-                  <input
-                    accept="image/jpeg,image/png,image/webp"
-                    capture="environment"
-                    className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold file:text-moss"
-                    name="photos"
-                    type="file"
-                  />
-                </label>
-                <button className="button-primary w-full sm:w-fit" type="submit">
-                  Încarcă poză
-                </button>
-              </form>
+              <div className="mt-3">
+                <PhotoUploadForm
+                  action={uploadRoomPhotosAction}
+                  previewAlt={`Preview ${room.name}`}
+                >
+                  <input name="property_id" type="hidden" value={property.id} />
+                  <input name="room_id" type="hidden" value={room.id} />
+                </PhotoUploadForm>
+              </div>
               {photosForRoom.length > 0 ? (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   {photosForRoom.map((photo) => (

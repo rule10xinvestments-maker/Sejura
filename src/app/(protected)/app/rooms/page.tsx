@@ -206,6 +206,7 @@ export default async function RoomsPage({
 
     revalidatePath("/app/rooms");
     revalidatePath(`/p/${property?.slug}`);
+    redirect(propertyScopedHref("/app/rooms", propertyId));
   }
 
   async function chooseCoverPhoto(formData: FormData) {
