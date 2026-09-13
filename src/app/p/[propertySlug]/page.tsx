@@ -2,6 +2,12 @@ import Link from "next/link";
 import React from "react";
 import { SejuraLogo } from "@/components/brand/sejura-logo";
 import { JonnyChat } from "@/components/public/jonny-chat";
+import {
+  listPublicPropertyPhotos,
+  listPublicRoomPhotos,
+  propertyCoverPhoto,
+  roomCoverPhoto
+} from "@/domain/photos/service";
 import { jonnyIntro, PublicConversationService } from "@/domain/public-chat/service";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
@@ -100,12 +106,7 @@ export default async function PublicPropertyPage({
     user && context?.property.owner_id === user.id
   );
 
-  if (
-    !context ||
-    readiness.reason === "PROPERTY_NOT_FOUND" ||
-    readiness.reason === "PROPERTY_DISABLED" ||
-    readiness.reason === "PUBLIC_DISABLED"
-  ) {
+  if (!context || context.property.status === "disabled" || !context.publicPage?.is_public) {
     return (
       <main className="min-h-[100svh] bg-mist px-4 py-10">
         <div className="mx-auto max-w-3xl space-y-4">
@@ -118,20 +119,25 @@ export default async function PublicPropertyPage({
     );
   }
 
-  if (!readiness.ok) {
-    return (
-      <main className="min-h-[100svh] bg-mist px-4 py-10">
-        <div className="mx-auto max-w-3xl space-y-4">
-          <SejuraLogo size="sm" />
-          <section className="panel">
-            <p>Rezervarile online nu sunt disponibile momentan pentru aceasta pensiune.</p>
-          </section>
-        </div>
-      </main>
-    );
+  const [{ data: roomsData, error: roomsError }, propertyPhotos, roomPhotos] =
+    await Promise.all([
+      supabase
+        .from("rooms")
+        .select("*")
+        .eq("property_id", context.property.id)
+        .eq("owner_id", context.property.owner_id)
+        .eq("status", "active")
+        .order("created_at", { ascending: true }),
+      listPublicPropertyPhotos(supabase, context.property.id),
+      listPublicRoomPhotos(supabase, context.property.id)
+    ]);
+
+  if (roomsError) {
+    throw roomsError;
   }
 
-  const rooms = readiness.rooms;
+  const rooms = roomsData ?? [];
+  const coverPhoto = propertyCoverPhoto(propertyPhotos);
 
   return (
     <main className="min-h-[100svh] bg-mist">
@@ -150,7 +156,18 @@ export default async function PublicPropertyPage({
           </div>
         </header>
 
-        <section className="rounded-lg border border-line bg-white p-4 shadow-soft sm:p-5">
+        <section className="overflow-hidden rounded-lg border border-line bg-white shadow-soft">
+          {coverPhoto ? (
+            <div className="h-64 bg-mist sm:h-80">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt={coverPhoto.alt_text ?? context.property.name}
+                className="h-full w-full object-cover"
+                src={coverPhoto.public_url}
+              />
+            </div>
+          ) : null}
+          <div className="p-4 sm:p-5">
           <p className="text-sm font-semibold text-clay">
             Cerere de rezervare prin Sejura
           </p>
@@ -161,7 +178,23 @@ export default async function PublicPropertyPage({
           {context.property.public_description ? (
             <p className="mt-3 text-ink/75">{context.property.public_description}</p>
           ) : null}
+          </div>
         </section>
+
+        {propertyPhotos.length > 0 ? (
+          <section className="grid gap-2 sm:grid-cols-3" aria-label="Galerie proprietate">
+            {propertyPhotos.map((photo) => (
+              <div className="h-32 overflow-hidden rounded-md bg-white" key={photo.id}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt={photo.alt_text ?? context.property.name}
+                  className="h-full w-full object-cover"
+                  src={photo.public_url}
+                />
+              </div>
+            ))}
+          </section>
+        ) : null}
 
         <section
           aria-label="Program check-in și check-out"
@@ -199,8 +232,22 @@ export default async function PublicPropertyPage({
               Camere disponibile
             </h2>
             <ul className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-              {rooms.map((room) => (
-                <li className="rounded-md border border-line bg-mist/60 p-3" key={room.name}>
+              {rooms.map((room) => {
+                const cover = roomCoverPhoto(roomPhotos, room.id);
+
+                return (
+                <li className="overflow-hidden rounded-md border border-line bg-mist/60" key={room.id}>
+                  {cover ? (
+                    <div className="h-36 bg-white">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        alt={cover.alt_text ?? room.name}
+                        className="h-full w-full object-cover"
+                        src={cover.public_url}
+                      />
+                    </div>
+                  ) : null}
+                  <div className="p-3">
                   <p className="font-semibold text-ink">{room.name}</p>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-ink/65">
                     <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1">
@@ -212,13 +259,17 @@ export default async function PublicPropertyPage({
                       de la {room.base_price_per_night} RON/noapte
                     </span>
                   </div>
+                  </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </section>
         ) : null}
 
-        <JonnyChat propertySlug={params.propertySlug} initialMessage={jonnyIntro} />
+        {readiness.ok ? (
+          <JonnyChat propertySlug={params.propertySlug} initialMessage={jonnyIntro} />
+        ) : null}
       </div>
     </main>
   );

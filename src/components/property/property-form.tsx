@@ -31,9 +31,9 @@ export function PropertyForm({ property, action }: PropertyFormProps) {
   const [propertyName, setPropertyName] = useState(property?.name ?? "");
   const currentState = state ?? PROPERTY_FORM_INITIAL_STATE;
   const hasPublicLinkSource = Boolean(propertyName.trim() || property?.slug);
-  const generatedSlug = propertyName.trim()
-    ? generatePropertySlug(propertyName)
-    : property?.slug;
+  const displayedSlug = property?.slug ?? (
+    propertyName.trim() ? generatePropertySlug(propertyName) : null
+  );
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,9 +96,9 @@ export function PropertyForm({ property, action }: PropertyFormProps) {
         <p className="mt-1 text-sm text-ink/65">
           {"\u00cel vom folosi mai t\u00e2rziu pentru pagina public\u0103 a pensiunii."}
         </p>
-        {hasPublicLinkSource && generatedSlug ? (
+        {hasPublicLinkSource && displayedSlug ? (
           <p className="mt-3 rounded-md bg-white px-3 py-2 font-mono text-sm text-ink">
-            Link public rezervat: /p/{generatedSlug}
+            Link public rezervat: /p/{displayedSlug}
           </p>
         ) : (
           <p className="mt-3 text-sm font-medium text-ink">

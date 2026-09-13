@@ -117,6 +117,50 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["property_public_pages"]["Row"]>;
         Relationships: [];
       };
+      property_photos: {
+        Row: {
+          id: string;
+          owner_id: string;
+          property_id: string;
+          storage_path: string;
+          public_url: string;
+          alt_text: string | null;
+          sort_order: number;
+          is_cover: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["property_photos"]["Row"]> & {
+          owner_id: string;
+          property_id: string;
+          storage_path: string;
+          public_url: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["property_photos"]["Row"]>;
+        Relationships: [];
+      };
+      room_photos: {
+        Row: {
+          id: string;
+          owner_id: string;
+          property_id: string;
+          room_id: string;
+          storage_path: string;
+          public_url: string;
+          alt_text: string | null;
+          sort_order: number;
+          is_cover: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["room_photos"]["Row"]> & {
+          owner_id: string;
+          property_id: string;
+          room_id: string;
+          storage_path: string;
+          public_url: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["room_photos"]["Row"]>;
+        Relationships: [];
+      };
       bookings: {
         Row: {
           id: string;

@@ -7,6 +7,12 @@ import {
 } from "@/domain/bookings/room-occupancy-summary";
 import { BookingService, RoomBlockService } from "@/domain/bookings/service";
 import { SupabaseBookingRepository } from "@/domain/bookings/supabase-repository";
+import {
+  listRoomPhotos,
+  removeRoomPhoto,
+  setRoomCoverPhoto,
+  uploadRoomPhoto
+} from "@/domain/photos/service";
 import { propertyScopedHref } from "@/domain/properties/navigation";
 import { getSelectedProperty } from "@/domain/properties/service";
 import {
@@ -44,6 +50,9 @@ export default async function RoomsPage({
   const ownerId = await getCurrentOwnerId(supabase);
   const property = await getSelectedProperty(supabase, ownerId, searchParams?.propertyId);
   const rooms = property ? await listRooms(supabase, ownerId, property.id) : [];
+  const roomPhotos = property
+    ? await listRoomPhotos(supabase, ownerId, property.id)
+    : [];
   const repository = new SupabaseBookingRepository(supabase);
   const bookings = property
     ? await new BookingService(repository).listBookings({
@@ -162,10 +171,64 @@ export default async function RoomsPage({
     );
   }
 
+  async function uploadPhotos(formData: FormData) {
+    "use server";
+
+    const serverSupabase = createSupabaseServerClient();
+    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
+    const propertyId = String(formData.get("property_id") ?? "");
+    const roomId = String(formData.get("room_id") ?? "");
+    const files = formData
+      .getAll("photos")
+      .filter((file): file is File => file instanceof File && file.size > 0);
+
+    for (const file of files) {
+      await uploadRoomPhoto(serverSupabase, serverOwnerId, propertyId, roomId, file);
+    }
+
+    revalidatePath("/app/rooms");
+    revalidatePath(`/p/${property?.slug}`);
+  }
+
+  async function chooseCoverPhoto(formData: FormData) {
+    "use server";
+
+    const serverSupabase = createSupabaseServerClient();
+    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
+    const propertyId = String(formData.get("property_id") ?? "");
+    await setRoomCoverPhoto(
+      serverSupabase,
+      serverOwnerId,
+      propertyId,
+      String(formData.get("room_id") ?? ""),
+      String(formData.get("photo_id") ?? "")
+    );
+    revalidatePath("/app/rooms");
+    revalidatePath(`/p/${property?.slug}`);
+  }
+
+  async function removePhoto(formData: FormData) {
+    "use server";
+
+    const serverSupabase = createSupabaseServerClient();
+    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
+    const propertyId = String(formData.get("property_id") ?? "");
+    await removeRoomPhoto(
+      serverSupabase,
+      serverOwnerId,
+      propertyId,
+      String(formData.get("room_id") ?? ""),
+      String(formData.get("photo_id") ?? "")
+    );
+    revalidatePath("/app/rooms");
+    revalidatePath(`/p/${property?.slug}`);
+  }
+
   return (
     <RoomsList
       property={property}
       rooms={rooms}
+      roomPhotos={roomPhotos}
       occupancySummaries={occupancySummaries}
       checkInTime={property?.check_in_time}
       checkOutTime={property?.check_out_time}
@@ -173,6 +236,9 @@ export default async function RoomsPage({
       saveAction={saveRoom}
       deactivateAction={deactivate}
       deleteAction={deleteRoom}
+      uploadRoomPhotosAction={uploadPhotos}
+      chooseRoomCoverAction={chooseCoverPhoto}
+      removeRoomPhotoAction={removePhoto}
     />
   );
 }

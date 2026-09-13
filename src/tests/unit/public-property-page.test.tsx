@@ -11,17 +11,44 @@ vi.mock("@/components/public/jonny-chat", () => ({
   JonnyChat: () => <section aria-label="Jonny chat">Jonny</section>
 }));
 
-vi.mock("@/lib/supabase/service-role", () => ({
-  createSupabaseServiceRoleClient: vi.fn(() => ({}))
-}));
-
 const getUser = vi.fn();
+const roomsQuery = vi.hoisted(() => ({
+  order: vi.fn()
+}));
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(() => ({
     auth: { getUser }
   }))
 }));
+
+vi.mock("@/lib/supabase/service-role", () => ({
+  createSupabaseServiceRoleClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              order: roomsQuery.order
+            }))
+          }))
+        }))
+      }))
+    }))
+  }))
+}));
+
+vi.mock("@/domain/photos/service", async () => {
+  const actual = await vi.importActual<typeof import("@/domain/photos/service")>(
+    "@/domain/photos/service"
+  );
+
+  return {
+    ...actual,
+    listPublicPropertyPhotos: vi.fn(() => Promise.resolve([])),
+    listPublicRoomPhotos: vi.fn(() => Promise.resolve([]))
+  };
+});
 
 const readiness: PublicPageReadiness = {
   ok: true,
@@ -79,6 +106,22 @@ describe("public property page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getUser.mockResolvedValue({ data: { user: null } });
+    roomsQuery.order.mockResolvedValue({
+      data: [
+        {
+          id: "room-1",
+          owner_id: "owner-1",
+          property_id: "property-1",
+          name: "Camera Verde",
+          max_guests: 2,
+          base_price_per_night: 260,
+          status: "active",
+          created_at: "2026-01-01T00:00:00.000Z",
+          updated_at: "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      error: null
+    });
     vi.spyOn(PublicConversationService.prototype, "getPublicPageReadiness").mockResolvedValue(
       readiness
     );

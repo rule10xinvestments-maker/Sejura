@@ -7,6 +7,8 @@ import {
   type RoomOccupancySummary
 } from "@/domain/bookings/room-occupancy-summary";
 import type { Property } from "@/domain/properties/types";
+import { roomCoverPhoto } from "@/domain/photos/service";
+import type { RoomPhoto } from "@/domain/photos/types";
 import type { RoomFormState } from "@/domain/rooms/form-state";
 import type { Room } from "@/domain/rooms/types";
 
@@ -17,13 +19,19 @@ type RoomsListProps = {
   checkInTime?: string | null;
   checkOutTime?: string | null;
   successMessage?: string | null;
+  roomPhotos?: RoomPhoto[];
   saveAction: (
     state: RoomFormState,
     formData: FormData
   ) => Promise<RoomFormState>;
   deactivateAction: (formData: FormData) => void | Promise<void>;
   deleteAction: (formData: FormData) => void | Promise<void>;
+  uploadRoomPhotosAction?: (formData: FormData) => void | Promise<void>;
+  chooseRoomCoverAction?: (formData: FormData) => void | Promise<void>;
+  removeRoomPhotoAction?: (formData: FormData) => void | Promise<void>;
 };
+
+function noopPhotoAction() {}
 
 export function RoomsList({
   property,
@@ -32,9 +40,13 @@ export function RoomsList({
   checkInTime,
   checkOutTime,
   successMessage,
+  roomPhotos = [],
   saveAction,
   deactivateAction,
-  deleteAction
+  deleteAction,
+  uploadRoomPhotosAction = noopPhotoAction,
+  chooseRoomCoverAction = noopPhotoAction,
+  removeRoomPhotoAction = noopPhotoAction
 }: RoomsListProps) {
   if (!property) {
     return (
@@ -78,6 +90,8 @@ export function RoomsList({
 
       <section className="space-y-3">
         {rooms.map((room) => {
+          const photosForRoom = roomPhotos.filter((photo) => photo.room_id === room.id);
+          const coverPhoto = roomCoverPhoto(roomPhotos, room.id);
           const occupancy = occupancySummaries.find(
             (summary) => summary.roomId === room.id
           );
@@ -106,6 +120,16 @@ export function RoomsList({
           <article className="panel" key={room.id}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
+                {coverPhoto ? (
+                  <div className="mb-3 h-44 overflow-hidden rounded-md bg-mist sm:w-72">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt={coverPhoto.alt_text ?? room.name}
+                      className="h-full w-full object-cover"
+                      src={coverPhoto.public_url}
+                    />
+                  </div>
+                ) : null}
                 <h2 className="font-semibold">{room.name}</h2>
                 <p className="text-sm text-ink/65">
                   {room.max_guests} oaspeti - {room.base_price_per_night} RON/noapte
@@ -289,6 +313,73 @@ export function RoomsList({
                 ) : null}
               </section>
             ) : null}
+            <section className="mt-4 rounded-md border border-line bg-mist/40 p-3">
+              <div>
+                <h3 className="font-semibold">Poze cameră</h3>
+                <p className="mt-1 text-sm text-ink/65">
+                  Pozele sunt opționale.
+                </p>
+              </div>
+              <form action={uploadRoomPhotosAction} className="mt-3 grid gap-3">
+                <input name="property_id" type="hidden" value={property.id} />
+                <input name="room_id" type="hidden" value={room.id} />
+                <label className="block space-y-1">
+                  <span className="label">Adaugă poze pentru această cameră</span>
+                  <input
+                    accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                    className="field"
+                    multiple
+                    name="photos"
+                    type="file"
+                  />
+                </label>
+                <button className="button-primary w-full sm:w-fit" type="submit">
+                  Adaugă poze
+                </button>
+              </form>
+              {photosForRoom.length > 0 ? (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {photosForRoom.map((photo) => (
+                    <article className="rounded-lg border border-line bg-white p-3" key={photo.id}>
+                      <div className="h-36 overflow-hidden rounded-md bg-mist">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          alt={photo.alt_text ?? room.name}
+                          className="h-full w-full object-cover"
+                          src={photo.public_url}
+                        />
+                      </div>
+                      <div className="mt-3 grid gap-2">
+                        <form action={chooseRoomCoverAction}>
+                          <input name="property_id" type="hidden" value={property.id} />
+                          <input name="room_id" type="hidden" value={room.id} />
+                          <input name="photo_id" type="hidden" value={photo.id} />
+                          <button className="button-secondary min-h-10 w-full px-3 py-2" type="submit">
+                            {photo.is_cover ? "Poză principală" : "Alege poza principală"}
+                          </button>
+                        </form>
+                        <details className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950">
+                          <summary className="cursor-pointer font-semibold">
+                            Elimină poza
+                          </summary>
+                          <form action={removeRoomPhotoAction} className="mt-3">
+                            <input name="property_id" type="hidden" value={property.id} />
+                            <input name="room_id" type="hidden" value={room.id} />
+                            <input name="photo_id" type="hidden" value={photo.id} />
+                            <button
+                              className="min-h-10 w-full rounded-md border border-red-300 bg-white px-3 py-2 font-semibold text-red-800"
+                              type="submit"
+                            >
+                              Confirmă eliminarea
+                            </button>
+                          </form>
+                        </details>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </section>
             <details className="mt-4">
               <summary className="cursor-pointer text-sm font-semibold text-moss">
                 Editeaza

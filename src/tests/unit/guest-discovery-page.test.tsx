@@ -30,7 +30,9 @@ describe("guest discovery page", () => {
         checkInTime: "15:00:00",
         checkOutTime: "11:00:00",
         activeRoomCount: 2,
-        fromPrice: 240
+        fromPrice: 240,
+        coverPhotoUrl: null,
+        coverPhotoAlt: null
       },
       {
         id: "property-2",
@@ -41,7 +43,9 @@ describe("guest discovery page", () => {
         checkInTime: null,
         checkOutTime: null,
         activeRoomCount: 1,
-        fromPrice: null
+        fromPrice: null,
+        coverPhotoUrl: null,
+        coverPhotoAlt: null
       }
     ]);
 

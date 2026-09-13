@@ -157,6 +157,28 @@ export default async function GuestPage() {
                   className="rounded-lg border border-line bg-white p-4 shadow-soft"
                   key={property.id}
                 >
+                  {property.coverPhotoUrl ? (
+                    <div className="mb-4 h-44 overflow-hidden rounded-md bg-mist">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        alt={property.coverPhotoAlt ?? property.name}
+                        className="h-full w-full object-cover"
+                        src={property.coverPhotoUrl}
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative mb-4 h-44 overflow-hidden rounded-md bg-mist">
+                      <Image
+                        alt=""
+                        aria-hidden="true"
+                        className="object-cover"
+                        fill
+                        sizes="(min-width: 768px) 50vw, 100vw"
+                        src="/brand/sejura-landing-background-v2.jpg"
+                      />
+                      <div className="absolute inset-0 bg-white/35" />
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="text-xl font-bold leading-tight text-ink">

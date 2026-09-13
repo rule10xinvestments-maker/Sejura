@@ -3,6 +3,13 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PropertyForm } from "@/components/property/property-form";
+import { PropertyPhotos } from "@/components/property/property-photos";
+import {
+  listPropertyPhotos,
+  removePropertyPhoto,
+  setPropertyCoverPhoto,
+  uploadPropertyPhoto
+} from "@/domain/photos/service";
 import {
   getPropertyFormValues,
   type PropertyFormState
@@ -44,6 +51,9 @@ export default async function PropertyPage({
     ownerId,
     searchParams?.propertyId
   );
+  const propertyPhotos = property
+    ? await listPropertyPhotos(supabase, ownerId, property.id)
+    : [];
 
   async function saveProperty(
     _state: PropertyFormState,
@@ -109,6 +119,59 @@ export default async function PropertyPage({
     revalidatePath("/app");
     revalidatePath("/app/property");
     redirect(propertyScopedHref("/app/rooms", savedPropertyId));
+  }
+
+  async function uploadPhotos(formData: FormData) {
+    "use server";
+
+    const serverSupabase = createSupabaseServerClient();
+    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
+    const propertyId = String(formData.get("property_id") ?? "");
+    const files = formData
+      .getAll("photos")
+      .filter((file): file is File => file instanceof File && file.size > 0);
+
+    for (const file of files) {
+      await uploadPropertyPhoto(serverSupabase, serverOwnerId, propertyId, file);
+    }
+
+    revalidatePath("/app/property");
+    revalidatePath("/guest");
+    revalidatePath(`/p/${property?.slug}`);
+  }
+
+  async function chooseCoverPhoto(formData: FormData) {
+    "use server";
+
+    const serverSupabase = createSupabaseServerClient();
+    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
+    const propertyId = String(formData.get("property_id") ?? "");
+    await setPropertyCoverPhoto(
+      serverSupabase,
+      serverOwnerId,
+      propertyId,
+      String(formData.get("photo_id") ?? "")
+    );
+    revalidatePath("/app/property");
+    revalidatePath("/guest");
+    revalidatePath(`/p/${property?.slug}`);
+  }
+
+  async function removePhoto(formData: FormData) {
+    "use server";
+
+    const serverSupabase = createSupabaseServerClient();
+    const serverOwnerId = await getCurrentOwnerId(serverSupabase);
+    const propertyId = String(formData.get("property_id") ?? "");
+    await removePropertyPhoto(
+      serverSupabase,
+      serverOwnerId,
+      propertyId,
+      String(formData.get("photo_id") ?? "")
+    );
+    revalidatePath("/app/property");
+    revalidatePath("/guest");
+    revalidatePath(`/p/${property?.slug}`);
   }
 
   return (
@@ -191,7 +254,16 @@ export default async function PropertyPage({
       </section>
 
       {property ? (
-        <PropertyForm property={property} action={saveProperty} />
+        <>
+          <PropertyForm property={property} action={saveProperty} />
+          <PropertyPhotos
+            property={property}
+            photos={propertyPhotos}
+            uploadAction={uploadPhotos}
+            coverAction={chooseCoverPhoto}
+            removeAction={removePhoto}
+          />
+        </>
       ) : (
         <section className="panel">
           <p className="text-sm text-ink/70">

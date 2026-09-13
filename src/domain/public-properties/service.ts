@@ -3,6 +3,7 @@ import type { AppSupabaseClient, Database } from "@/lib/supabase/types";
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
 type PublicPageRow = Database["public"]["Tables"]["property_public_pages"]["Row"];
 type RoomRow = Database["public"]["Tables"]["rooms"]["Row"];
+type PropertyPhotoRow = Database["public"]["Tables"]["property_photos"]["Row"];
 
 export type PublicPropertyListing = {
   id: string;
@@ -14,12 +15,15 @@ export type PublicPropertyListing = {
   checkOutTime: string | null;
   activeRoomCount: number;
   fromPrice: number | null;
+  coverPhotoUrl: string | null;
+  coverPhotoAlt: string | null;
 };
 
 export function buildPublicPropertyListings(input: {
   publicPages: PublicPageRow[];
   properties: PropertyRow[];
   rooms: RoomRow[];
+  propertyPhotos?: PropertyPhotoRow[];
 }): PublicPropertyListing[] {
   const publicPropertyIds = new Set(
     input.publicPages.filter((page) => page.is_public).map((page) => page.property_id)
@@ -37,6 +41,10 @@ export function buildPublicPropertyListings(input: {
       const prices = activeRooms
         .map((room) => room.base_price_per_night)
         .filter((price) => Number.isFinite(price));
+      const photos = (input.propertyPhotos ?? []).filter(
+        (photo) => photo.property_id === property.id
+      );
+      const coverPhoto = photos.find((photo) => photo.is_cover) ?? photos[0] ?? null;
 
       return {
         id: property.id,
@@ -47,7 +55,9 @@ export function buildPublicPropertyListings(input: {
         checkInTime: property.check_in_time,
         checkOutTime: property.check_out_time,
         activeRoomCount: activeRooms.length,
-        fromPrice: prices.length > 0 ? Math.min(...prices) : null
+        fromPrice: prices.length > 0 ? Math.min(...prices) : null,
+        coverPhotoUrl: coverPhoto?.public_url ?? null,
+        coverPhotoAlt: coverPhoto?.alt_text ?? property.name
       };
     })
     .sort((left, right) => left.name.localeCompare(right.name, "ro"));
@@ -97,9 +107,17 @@ export async function getPublicPropertyListings(
     throw roomsError;
   }
 
+  const { listPublicPropertyPhotos } = await import("@/domain/photos/service");
+  const propertyPhotos = await Promise.all(
+    visiblePropertyIds.map((propertyId) =>
+      listPublicPropertyPhotos(supabase, propertyId)
+    )
+  );
+
   return buildPublicPropertyListings({
     publicPages: publicPages ?? [],
     properties: properties ?? [],
-    rooms: rooms ?? []
+    rooms: rooms ?? [],
+    propertyPhotos: propertyPhotos.flat()
   });
 }

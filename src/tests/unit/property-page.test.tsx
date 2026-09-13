@@ -6,7 +6,8 @@ import PropertyPage from "@/app/(protected)/app/property/page";
 const propertyMocks = vi.hoisted(() => ({
   getCurrentOwnerId: vi.fn(),
   getSelectedProperty: vi.fn(),
-  listOwnerProperties: vi.fn()
+  listOwnerProperties: vi.fn(),
+  listPropertyPhotos: vi.fn()
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -28,6 +29,14 @@ vi.mock("@/domain/properties/service", async () => {
     listOwnerProperties: propertyMocks.listOwnerProperties
   };
 });
+
+vi.mock("@/domain/photos/service", () => ({
+  listPropertyPhotos: propertyMocks.listPropertyPhotos
+}));
+
+vi.mock("@/components/property/property-photos", () => ({
+  PropertyPhotos: () => <section aria-label="Poze pensiune" />
+}));
 
 vi.mock("@/components/property/property-form", () => ({
   PropertyForm: ({ property }: { property: { name?: string } | null }) => (
@@ -62,6 +71,7 @@ function property(patch: Record<string, unknown>) {
 describe("PropertyPage", () => {
   beforeEach(() => {
     propertyMocks.getCurrentOwnerId.mockResolvedValue("owner-1");
+    propertyMocks.listPropertyPhotos.mockResolvedValue([]);
     const active = property({});
     propertyMocks.getSelectedProperty.mockResolvedValue(active);
     propertyMocks.listOwnerProperties.mockResolvedValue([
@@ -92,4 +102,3 @@ describe("PropertyPage", () => {
     );
   });
 });
-
