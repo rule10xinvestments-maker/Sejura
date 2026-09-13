@@ -14,6 +14,7 @@ export function PhotoUploadForm({
   children,
   previewAlt
 }: PhotoUploadFormProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -46,8 +47,33 @@ export function PhotoUploadForm({
     setPreviewUrl(URL.createObjectURL(file));
   }
 
+  function resetSelection() {
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setFileName(null);
+  }
+
+  function cancelUpload() {
+    resetSelection();
+    setIsExpanded(false);
+  }
+
+  if (!isExpanded) {
+    return (
+      <button
+        className="button-secondary min-h-10 w-fit px-3 py-2 text-sm"
+        onClick={() => setIsExpanded(true)}
+        type="button"
+      >
+        Adaugă poză
+      </button>
+    );
+  }
+
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} className="grid gap-3" onSubmit={() => setIsExpanded(false)}>
       {children}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block space-y-1">
@@ -87,9 +113,18 @@ export function PhotoUploadForm({
         </div>
       ) : null}
 
-      <button className="button-primary w-full sm:w-fit" type="submit">
-        Încarcă poza
-      </button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button className="button-primary min-h-10 px-3 py-2 text-sm sm:w-fit" type="submit">
+          Încarcă poza
+        </button>
+        <button
+          className="button-secondary min-h-10 px-3 py-2 text-sm sm:w-fit"
+          onClick={cancelUpload}
+          type="button"
+        >
+          Renunță
+        </button>
+      </div>
     </form>
   );
 }

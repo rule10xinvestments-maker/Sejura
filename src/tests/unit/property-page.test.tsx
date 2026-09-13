@@ -38,9 +38,7 @@ vi.mock("@/components/property/property-photos", () => ({
   PropertyPhotos: ({ loadError }: { loadError?: boolean }) => (
     <section aria-label="Poze pensiune">
       <h2>Poze pensiune</h2>
-      <p>Încarcă poză</p>
-      <p>Fă poză</p>
-      <p>Alege poza principală</p>
+      <button type="button">Adaugă poză</button>
       <p>Pozele sunt opționale. Poza principală apare prima pe pagina publică.</p>
       <p>Pozele sunt opționale.</p>
       <p>Nu ai adăugat poze încă.</p>
@@ -128,9 +126,8 @@ describe("PropertyPage", () => {
       "/app/settings?propertyId=property-1"
     );
     expect(screen.getByRole("heading", { name: "Poze pensiune" })).toBeVisible();
-    expect(screen.getByText("Încarcă poză")).toBeVisible();
-    expect(screen.getByText("Fă poză")).toBeVisible();
-    expect(screen.getByText("Alege poza principală")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Adaugă poză" })).toBeVisible();
+    expect(screen.queryByText("Fă poză")).not.toBeInTheDocument();
     expect(screen.getByText("Nu ai adăugat poze încă.")).toBeVisible();
   });
 

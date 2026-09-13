@@ -29,6 +29,10 @@ describe("PhotoUploadForm", () => {
       </PhotoUploadForm>
     );
 
+    expect(screen.queryByLabelText("Alege din galerie")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Fă poză")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Adaugă poză" }));
+
     const galleryInput = screen.getByLabelText("Alege din galerie");
     const cameraInput = screen.getByLabelText("Fă poză");
 
@@ -47,6 +51,8 @@ describe("PhotoUploadForm", () => {
         <input name="property_id" type="hidden" value="property-1" />
       </PhotoUploadForm>
     );
+
+    fireEvent.click(screen.getByRole("button", { name: "Adaugă poză" }));
 
     const file = new File(["photo"], "1000034430.jpg", { type: "image/jpeg" });
     fireEvent.change(screen.getByLabelText("Alege din galerie"), {
@@ -68,6 +74,8 @@ describe("PhotoUploadForm", () => {
         <input name="room_id" type="hidden" value="room-1" />
       </PhotoUploadForm>
     );
+
+    fireEvent.click(screen.getByRole("button", { name: "Adaugă poză" }));
 
     const file = new File(["photo"], "camera-capture.webp", { type: "image/webp" });
     fireEvent.change(screen.getByLabelText("Fă poză"), {
@@ -91,6 +99,8 @@ describe("PhotoUploadForm", () => {
       </PhotoUploadForm>
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Adaugă poză" }));
+
     const form = screen.getByRole("button", { name: "Încarcă poza" }).closest("form");
 
     expect(form?.querySelector('input[name="property_id"]')).toHaveAttribute(
@@ -101,5 +111,23 @@ describe("PhotoUploadForm", () => {
       "value",
       "room-1"
     );
+  });
+
+  it("collapses after submit and keeps the selected thumbnail flow calm", () => {
+    render(
+      <PhotoUploadForm action={vi.fn()} previewAlt="Preview Camera Verde">
+        <input name="room_id" type="hidden" value="room-1" />
+      </PhotoUploadForm>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Adaugă poză" }));
+    const file = new File(["photo"], "camera.jpg", { type: "image/jpeg" });
+    fireEvent.change(screen.getByLabelText("Alege din galerie"), {
+      target: { files: [file] }
+    });
+    fireEvent.submit(screen.getByRole("button", { name: "Încarcă poza" }).closest("form")!);
+
+    expect(screen.getByRole("button", { name: "Adaugă poză" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Încarcă poza" })).not.toBeInTheDocument();
   });
 });

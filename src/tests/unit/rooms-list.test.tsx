@@ -1,5 +1,5 @@
 ﻿import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { RoomsList } from "@/components/rooms/rooms-list";
 import type { BookingRecord } from "@/domain/bookings/types";
@@ -181,10 +181,36 @@ describe("RoomsList", () => {
     expect(
       screen.getByText("Adaugă poze pentru această cameră. Pozele sunt opționale.")
     ).toBeVisible();
-    expect(screen.getByText("Alege din galerie")).toBeVisible();
-    expect(screen.getByText("Fă poză")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Încarcă poza" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Adaugă poză" })).toBeVisible();
+    expect(screen.queryByLabelText("Alege din galerie")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Fă poză")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Încarcă poza" })).not.toBeInTheDocument();
     expect(screen.getByText("Nu ai adăugat poze pentru această cameră.")).toBeVisible();
+  });
+
+  it("expands upload controls only for the selected room", () => {
+    render(
+      <RoomsList
+        deactivateAction={vi.fn()}
+        deleteAction={vi.fn()}
+        property={property}
+        rooms={[room, secondRoom]}
+        saveAction={vi.fn()}
+      />
+    );
+
+    const roomOneCard = screen.getByText("Camera Verde").closest("article");
+    const roomTwoCard = screen.getByText("Camera Albastră").closest("article");
+
+    fireEvent.click(within(roomOneCard as HTMLElement).getByRole("button", { name: "Adaugă poză" }));
+
+    expect(roomOneCard?.querySelector('input[type="file"][name="photos"]')).not.toBeNull();
+    expect(roomOneCard).toHaveTextContent("Alege din galerie");
+    expect(roomOneCard).toHaveTextContent("Fă poză");
+    expect(roomOneCard).toHaveTextContent("Încarcă poza");
+    expect(roomOneCard).toHaveTextContent("Renunță");
+    expect(roomTwoCard?.querySelector('input[type="file"][name="photos"]')).toBeNull();
+    expect(roomTwoCard).not.toHaveTextContent("Alege din galerie");
   });
 
   it("shows uploaded room photos only under their own room", () => {
@@ -211,6 +237,9 @@ describe("RoomsList", () => {
 
     expect(roomOneCard?.querySelector('img[src="https://signed.example/verde.jpg"]')).not.toBeNull();
     expect(roomOneCard).not.toHaveTextContent("Nu ai adăugat poze pentru această cameră.");
+    expect(roomOneCard).toHaveTextContent("Poză principală");
+    expect(roomOneCard).toHaveTextContent("Gestionează poza");
+    expect(screen.queryByText("Confirmă eliminarea")).not.toBeVisible();
     expect(roomTwoCard?.querySelector('img[src="https://signed.example/verde.jpg"]')).toBeNull();
     expect(roomTwoCard).toHaveTextContent("Nu ai adăugat poze pentru această cameră.");
   });

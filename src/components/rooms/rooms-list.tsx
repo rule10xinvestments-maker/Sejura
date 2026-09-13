@@ -323,13 +323,13 @@ export function RoomsList({
               </section>
             ) : null}
             <section className="mt-4 rounded-md border border-line bg-mist/40 p-3">
-              <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
                 <h3 className="font-semibold">Poze cameră</h3>
                 <p className="mt-1 text-sm text-ink/65">
                   Adaugă poze pentru această cameră. Pozele sunt opționale.
                 </p>
-              </div>
-              <div className="mt-3">
+                </div>
                 <PhotoUploadForm
                   action={uploadRoomPhotosAction}
                   previewAlt={`Preview ${room.name}`}
@@ -339,10 +339,10 @@ export function RoomsList({
                 </PhotoUploadForm>
               </div>
               {photosForRoom.length > 0 ? (
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                   {photosForRoom.map((photo) => (
-                    <article className="rounded-lg border border-line bg-white p-3" key={photo.id}>
-                      <div className="h-36 overflow-hidden rounded-md bg-mist">
+                    <article className="rounded-md border border-line bg-white p-2" key={photo.id}>
+                      <div className="h-24 overflow-hidden rounded-md bg-mist sm:h-28">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           alt={photo.alt_text ?? room.name}
@@ -350,30 +350,47 @@ export function RoomsList({
                           src={photo.public_url}
                         />
                       </div>
-                      <div className="mt-3 grid gap-2">
-                        <form action={chooseRoomCoverAction}>
-                          <input name="property_id" type="hidden" value={property.id} />
-                          <input name="room_id" type="hidden" value={room.id} />
-                          <input name="photo_id" type="hidden" value={photo.id} />
-                          <button className="button-secondary min-h-10 w-full px-3 py-2" type="submit">
-                            {photo.is_cover ? "Poză principală" : "Alege poza principală"}
-                          </button>
-                        </form>
-                        <details className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950">
-                          <summary className="cursor-pointer font-semibold">
-                            Elimină poza
+                      <div className="mt-2 flex flex-col gap-2">
+                        {photo.is_cover ? (
+                          <span className="rounded-md bg-moss px-2 py-1 text-center text-xs font-semibold text-white">
+                            Poză principală
+                          </span>
+                        ) : null}
+                        <details className="rounded-md border border-line bg-mist/40 p-2 text-sm">
+                          <summary className="cursor-pointer font-semibold text-moss">
+                            Gestionează poza
                           </summary>
-                          <form action={removeRoomPhotoAction} className="mt-3">
-                            <input name="property_id" type="hidden" value={property.id} />
-                            <input name="room_id" type="hidden" value={room.id} />
-                            <input name="photo_id" type="hidden" value={photo.id} />
-                            <button
-                              className="min-h-10 w-full rounded-md border border-red-300 bg-white px-3 py-2 font-semibold text-red-800"
-                              type="submit"
-                            >
-                              Confirmă eliminarea
-                            </button>
-                          </form>
+                          <div className="mt-2 grid gap-2">
+                            {!photo.is_cover ? (
+                              <form action={chooseRoomCoverAction}>
+                                <input name="property_id" type="hidden" value={property.id} />
+                                <input name="room_id" type="hidden" value={room.id} />
+                                <input name="photo_id" type="hidden" value={photo.id} />
+                                <button
+                                  className="button-secondary min-h-9 w-full px-2 py-1 text-sm"
+                                  type="submit"
+                                >
+                                  Alege ca principală
+                                </button>
+                              </form>
+                            ) : null}
+                            <details className="rounded-md border border-red-200 bg-red-50 p-2 text-red-950">
+                              <summary className="cursor-pointer font-semibold">
+                                Elimină poza
+                              </summary>
+                              <form action={removeRoomPhotoAction} className="mt-2">
+                                <input name="property_id" type="hidden" value={property.id} />
+                                <input name="room_id" type="hidden" value={room.id} />
+                                <input name="photo_id" type="hidden" value={photo.id} />
+                                <button
+                                  className="min-h-9 w-full rounded-md border border-red-300 bg-white px-2 py-1 font-semibold text-red-800"
+                                  type="submit"
+                                >
+                                  Confirmă eliminarea
+                                </button>
+                              </form>
+                            </details>
+                          </div>
                         </details>
                       </div>
                     </article>
