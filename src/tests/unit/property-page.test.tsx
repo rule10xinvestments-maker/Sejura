@@ -102,6 +102,26 @@ describe("PropertyPage", () => {
       "/app/properties/new"
     );
     expect(screen.getByRole("heading", { name: "Proprietățile mele" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Primul pas: configurează proprietatea" })
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Adaugă detaliile pensiunii, apoi configurează camerele și pagina publică."
+      )
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: "Completează detaliile" })).toHaveAttribute(
+      "href",
+      "/app/property?propertyId=property-1#detalii-proprietate"
+    );
+    expect(screen.getByRole("link", { name: "Configurează camerele" })).toHaveAttribute(
+      "href",
+      "/app/rooms?propertyId=property-1"
+    );
+    expect(screen.getByRole("link", { name: "Vezi pagina publică" })).toHaveAttribute(
+      "href",
+      "/p/pensiunea-a"
+    );
     expect(screen.getByText("Pensiunea A")).toBeVisible();
     expect(screen.getByText("Cabana B")).toBeVisible();
     expect(screen.getByText("Proprietate activă")).toBeVisible();
@@ -109,6 +129,7 @@ describe("PropertyPage", () => {
       "href",
       "/app/property?propertyId=property-2"
     );
+    expect(screen.queryByRole("link", { name: "Panou" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Camere" })).toHaveAttribute(
       "href",
       "/app/rooms?propertyId=property-1"

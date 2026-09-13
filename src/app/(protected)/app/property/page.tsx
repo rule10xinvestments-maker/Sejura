@@ -217,6 +217,40 @@ export default async function PropertyPage({
       </div>
 
       <section className="panel">
+        <p className="text-sm font-semibold text-clay">Configurare</p>
+        <h2 className="mt-1 text-lg font-semibold">
+          Primul pas: configurează proprietatea
+        </h2>
+        <p className="mt-1 text-sm text-ink/65">
+          Adaugă detaliile pensiunii, apoi configurează camerele și pagina publică.
+        </p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <Link
+            className="button-primary min-h-11 justify-center"
+            href={
+              property
+                ? `/app/property?propertyId=${encodeURIComponent(property.id)}#detalii-proprietate`
+                : "/app/property#detalii-proprietate"
+            }
+          >
+            Completează detaliile
+          </Link>
+          <Link
+            className="button-secondary min-h-11 justify-center"
+            href={propertyScopedHref("/app/rooms", property?.id)}
+          >
+            Configurează camerele
+          </Link>
+          <Link
+            className="button-secondary min-h-11 justify-center"
+            href={property ? `/p/${property.slug}` : "/app/property"}
+          >
+            Vezi pagina publică
+          </Link>
+        </div>
+      </section>
+
+      <section className="panel">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold">Proprietățile mele</h2>
@@ -294,12 +328,6 @@ export default async function PropertyPage({
             <div className="mt-4 grid gap-2 sm:grid-cols-4">
               <Link
                 className="button-secondary min-h-11 justify-center"
-                href={propertyScopedHref("/app", property.id)}
-              >
-                Panou
-              </Link>
-              <Link
-                className="button-secondary min-h-11 justify-center"
                 href={propertyScopedHref("/app/rooms", property.id)}
               >
                 Camere
@@ -324,7 +352,9 @@ export default async function PropertyPage({
               </Link>
             </div>
           </section>
-          <PropertyForm property={property} action={saveProperty} />
+          <div id="detalii-proprietate">
+            <PropertyForm property={property} action={saveProperty} />
+          </div>
           <PropertyPhotos
             property={property}
             photos={propertyPhotos}

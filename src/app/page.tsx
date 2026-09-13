@@ -63,9 +63,9 @@ export default async function HomePage() {
           <SejuraLogo size="sm" />
           <Link
             className="button-secondary min-h-10 px-4"
-            href={isAuthenticated ? "/app" : "/sign-in"}
+            href={isAuthenticated ? "/app/property" : "/sign-in"}
           >
-            {isAuthenticated ? "Panou" : "Intră în cont"}
+            {isAuthenticated ? "Proprietate" : "Intră în cont"}
           </Link>
         </nav>
 

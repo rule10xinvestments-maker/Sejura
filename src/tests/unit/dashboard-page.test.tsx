@@ -70,5 +70,9 @@ describe("DashboardPage", () => {
       "href",
       "/app/bookings?propertyId=property-1"
     );
+    expect(screen.getByRole("link", { name: "Continua configurarea" })).toHaveAttribute(
+      "href",
+      "/app/property?propertyId=property-1"
+    );
   });
 });

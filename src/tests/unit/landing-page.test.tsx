@@ -47,16 +47,16 @@ describe("landing page", () => {
     expect(screen.queryByText("Am deja cont")).not.toBeInTheDocument();
   });
 
-  it("shows the app panel CTA instead of login for authenticated owners", async () => {
+  it("shows the property CTA instead of login for authenticated owners", async () => {
     landingAuthMocks.getUser.mockResolvedValue({
       data: { user: { id: "owner-1" } }
     });
 
     await renderHomePage();
 
-    expect(screen.getByRole("link", { name: "Panou" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Proprietate" })).toHaveAttribute(
       "href",
-      "/app"
+      "/app/property"
     );
     expect(screen.queryByRole("link", { name: "Intră în cont" })).not.toBeInTheDocument();
   });

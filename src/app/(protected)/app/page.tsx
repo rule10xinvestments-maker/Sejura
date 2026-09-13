@@ -173,7 +173,7 @@ export default async function DashboardPage({
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <Link
             className="button-primary"
-            href={propertyScopedHref("/app/onboarding", property?.id)}
+            href={propertyScopedHref("/app/property", property?.id)}
           >
             Continua configurarea
           </Link>
