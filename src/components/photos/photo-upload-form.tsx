@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 
 type PhotoUploadFormProps = {
@@ -16,6 +16,8 @@ export function PhotoUploadForm({
 }: PhotoUploadFormProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -23,8 +25,15 @@ export function PhotoUploadForm({
     };
   }, [previewUrl]);
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleFileChange(
+    event: ChangeEvent<HTMLInputElement>,
+    source: "camera" | "gallery"
+  ) {
     const file = event.currentTarget.files?.[0] ?? null;
+    const otherInput =
+      source === "gallery" ? cameraInputRef.current : galleryInputRef.current;
+
+    if (otherInput) otherInput.value = "";
     if (previewUrl) URL.revokeObjectURL(previewUrl);
 
     if (!file) {
@@ -47,7 +56,8 @@ export function PhotoUploadForm({
             accept="image/jpeg,image/png,image/webp"
             className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-moss file:px-3 file:py-2 file:font-semibold file:text-white"
             name="photos"
-            onChange={handleFileChange}
+            onChange={(event) => handleFileChange(event, "gallery")}
+            ref={galleryInputRef}
             type="file"
           />
         </label>
@@ -58,7 +68,8 @@ export function PhotoUploadForm({
             capture="environment"
             className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold file:text-moss"
             name="photos"
-            onChange={handleFileChange}
+            onChange={(event) => handleFileChange(event, "camera")}
+            ref={cameraInputRef}
             type="file"
           />
         </label>

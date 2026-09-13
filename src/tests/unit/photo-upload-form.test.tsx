@@ -22,10 +22,29 @@ describe("PhotoUploadForm", () => {
     revokeObjectURL.mockClear();
   });
 
-  it("shows selected image preview before upload", () => {
+  it("keeps gallery and camera inputs separate", () => {
     render(
       <PhotoUploadForm action={vi.fn()} previewAlt="Preview Camera Verde">
         <input name="room_id" type="hidden" value="room-1" />
+      </PhotoUploadForm>
+    );
+
+    const galleryInput = screen.getByLabelText("Alege din galerie");
+    const cameraInput = screen.getByLabelText("Fă poză");
+
+    expect(galleryInput).toHaveAttribute("type", "file");
+    expect(galleryInput).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+    expect(galleryInput).not.toHaveAttribute("capture");
+    expect(cameraInput).toHaveAttribute("type", "file");
+    expect(cameraInput).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+    expect(cameraInput).toHaveAttribute("capture", "environment");
+    expect(screen.getAllByRole("button", { name: "Încarcă poza" })).toHaveLength(1);
+  });
+
+  it("shows selected gallery image preview before upload", () => {
+    render(
+      <PhotoUploadForm action={vi.fn()} previewAlt="Preview Camera Verde">
+        <input name="property_id" type="hidden" value="property-1" />
       </PhotoUploadForm>
     );
 
@@ -41,5 +60,46 @@ describe("PhotoUploadForm", () => {
     );
     expect(screen.getByText("1000034430.jpg")).toBeVisible();
     expect(screen.getByRole("button", { name: "Încarcă poza" })).toBeVisible();
+  });
+
+  it("shows selected camera image preview before upload", () => {
+    render(
+      <PhotoUploadForm action={vi.fn()} previewAlt="Preview Camera Verde">
+        <input name="room_id" type="hidden" value="room-1" />
+      </PhotoUploadForm>
+    );
+
+    const file = new File(["photo"], "camera-capture.webp", { type: "image/webp" });
+    fireEvent.change(screen.getByLabelText("Fă poză"), {
+      target: { files: [file] }
+    });
+
+    expect(createObjectURL).toHaveBeenCalledWith(file);
+    expect(screen.getByAltText("Preview Camera Verde")).toHaveAttribute(
+      "src",
+      "blob:preview-url"
+    );
+    expect(screen.getByText("camera-capture.webp")).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Încarcă poza" })).toHaveLength(1);
+  });
+
+  it("keeps property and room hidden ids inside the upload form", () => {
+    render(
+      <PhotoUploadForm action={vi.fn()} previewAlt="Preview Camera Verde">
+        <input name="property_id" type="hidden" value="property-1" />
+        <input name="room_id" type="hidden" value="room-1" />
+      </PhotoUploadForm>
+    );
+
+    const form = screen.getByRole("button", { name: "Încarcă poza" }).closest("form");
+
+    expect(form?.querySelector('input[name="property_id"]')).toHaveAttribute(
+      "value",
+      "property-1"
+    );
+    expect(form?.querySelector('input[name="room_id"]')).toHaveAttribute(
+      "value",
+      "room-1"
+    );
   });
 });
