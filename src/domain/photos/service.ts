@@ -68,25 +68,52 @@ async function signedUrl(supabase: AppSupabaseClient, path: string) {
   return data.signedUrl;
 }
 
+async function signedUrlOrNull(
+  supabase: AppSupabaseClient,
+  path: string,
+  context: string
+) {
+  try {
+    return await signedUrl(supabase, path);
+  } catch (error) {
+    console.error(`[photos] failed to sign ${context}`, { path, error });
+    return null;
+  }
+}
+
 async function signPropertyPhotos(
   supabase: AppSupabaseClient,
   photos: PropertyPhoto[]
 ) {
-  return Promise.all(
-    photos.map(async (photo) => ({
-      ...photo,
-      public_url: await signedUrl(supabase, photo.storage_path)
-    }))
+  const signedPhotos = await Promise.all(
+    photos.map(async (photo) => {
+      const publicUrl = await signedUrlOrNull(
+        supabase,
+        photo.storage_path,
+        `property photo ${photo.id}`
+      );
+
+      return publicUrl ? { ...photo, public_url: publicUrl } : null;
+    })
   );
+
+  return signedPhotos.filter((photo): photo is PropertyPhoto => photo !== null);
 }
 
 async function signRoomPhotos(supabase: AppSupabaseClient, photos: RoomPhoto[]) {
-  return Promise.all(
-    photos.map(async (photo) => ({
-      ...photo,
-      public_url: await signedUrl(supabase, photo.storage_path)
-    }))
+  const signedPhotos = await Promise.all(
+    photos.map(async (photo) => {
+      const publicUrl = await signedUrlOrNull(
+        supabase,
+        photo.storage_path,
+        `room photo ${photo.id}`
+      );
+
+      return publicUrl ? { ...photo, public_url: publicUrl } : null;
+    })
   );
+
+  return signedPhotos.filter((photo): photo is RoomPhoto => photo !== null);
 }
 
 export async function listPropertyPhotos(
