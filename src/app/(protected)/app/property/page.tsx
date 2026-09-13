@@ -28,6 +28,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type SearchParams = {
   propertyId?: string;
+  status?: string;
 };
 
 type LoadedPropertyPhotos = Awaited<ReturnType<typeof listPropertyPhotos>>;
@@ -38,6 +39,14 @@ function statusCopy(status: string) {
   if (status === "ready_auto_confirm_mode") return "Pregătită";
   if (status === "setup_incomplete") return "În configurare";
   return "Draft";
+}
+
+function pageMessage(status?: string) {
+  if (status === "photo-error") {
+    return "Poza nu a putut fi încărcată. Încearcă din nou.";
+  }
+
+  return null;
 }
 
 export default async function PropertyPage({
@@ -141,8 +150,13 @@ export default async function PropertyPage({
       .getAll("photos")
       .filter((file): file is File => file instanceof File && file.size > 0);
 
-    for (const file of files) {
-      await uploadPropertyPhoto(serverSupabase, serverOwnerId, propertyId, file);
+    try {
+      for (const file of files) {
+        await uploadPropertyPhoto(serverSupabase, serverOwnerId, propertyId, file);
+      }
+    } catch (error) {
+      console.error("[property photos] failed to upload", error);
+      redirect(propertyScopedHref("/app/property?status=photo-error", propertyId));
     }
 
     revalidatePath("/app/property");
@@ -186,6 +200,11 @@ export default async function PropertyPage({
 
   return (
     <div className="space-y-4">
+      {pageMessage(searchParams?.status) ? (
+        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">
+          {pageMessage(searchParams?.status)}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-clay">Proprietate</p>

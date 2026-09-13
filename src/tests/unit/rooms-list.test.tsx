@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { RoomsList } from "@/components/rooms/rooms-list";
@@ -155,9 +155,12 @@ describe("RoomsList", () => {
       "button"
     );
     expect(screen.getByText("Poze cameră")).toBeVisible();
-    expect(screen.getByText("Adaugă poze pentru această cameră")).toBeVisible();
-    expect(screen.getByText("Pozele sunt opționale.")).toBeVisible();
-    expect(screen.getByText("Nu ai adăugat poze încă.")).toBeVisible();
+    expect(
+      screen.getByText("Adaugă poze pentru această cameră. Pozele sunt opționale.")
+    ).toBeVisible();
+    expect(screen.getAllByText("Încarcă poză")).toHaveLength(2);
+    expect(screen.getByText("Fă poză")).toBeVisible();
+    expect(screen.getByText("Nu ai adăugat poze pentru această cameră.")).toBeVisible();
   });
 
   it("shows a safe fallback when room photos cannot be loaded", () => {
@@ -225,3 +228,4 @@ describe("RoomsList", () => {
     );
   });
 });
+

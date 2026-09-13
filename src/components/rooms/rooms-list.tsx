@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import Link from "next/link";
 import { RoomForm } from "@/components/rooms/room-form";
 import {
@@ -325,24 +325,34 @@ export function RoomsList({
               <div>
                 <h3 className="font-semibold">Poze cameră</h3>
                 <p className="mt-1 text-sm text-ink/65">
-                  Pozele sunt opționale.
+                  Adaugă poze pentru această cameră. Pozele sunt opționale.
                 </p>
               </div>
               <form action={uploadRoomPhotosAction} className="mt-3 grid gap-3">
                 <input name="property_id" type="hidden" value={property.id} />
                 <input name="room_id" type="hidden" value={room.id} />
                 <label className="block space-y-1">
-                  <span className="label">Adaugă poze pentru această cameră</span>
+                  <span className="label">Încarcă poză</span>
                   <input
-                    accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-                    className="field"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-moss file:px-3 file:py-2 file:font-semibold file:text-white"
                     multiple
                     name="photos"
                     type="file"
                   />
                 </label>
+                <label className="block space-y-1">
+                  <span className="label">Fă poză</span>
+                  <input
+                    accept="image/jpeg,image/png,image/webp"
+                    capture="environment"
+                    className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold file:text-moss"
+                    name="photos"
+                    type="file"
+                  />
+                </label>
                 <button className="button-primary w-full sm:w-fit" type="submit">
-                  Adaugă poze
+                  Încarcă poză
                 </button>
               </form>
               {photosForRoom.length > 0 ? (
@@ -388,7 +398,7 @@ export function RoomsList({
                 </div>
               ) : (
                 <p className="mt-3 rounded-md border border-dashed border-line bg-white px-3 py-3 text-sm text-ink/70">
-                  Nu ai adăugat poze încă.
+                  Nu ai adăugat poze pentru această cameră.
                 </p>
               )}
             </section>
@@ -407,3 +417,6 @@ export function RoomsList({
     </div>
   );
 }
+
+
+

@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+﻿import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { RoomsList } from "@/components/rooms/rooms-list";
 import {
@@ -31,13 +31,16 @@ type LoadedRoomPhotos = Awaited<ReturnType<typeof listRoomPhotos>>;
 
 function getRoomPageMessage(messageKey?: string) {
   if (messageKey === "room-deactivated") {
-    return "Camera a fost dezactivat\u0103.";
+    return "Camera a fost dezactivată.";
   }
   if (messageKey === "room-deleted") {
     return "Camera a fost ștearsă.";
   }
   if (messageKey === "room-archived") {
     return "Camera are rezervări sau istoric. Am dezactivat camera pentru a păstra istoricul.";
+  }
+  if (messageKey === "photo-error") {
+    return "Poza nu a putut fi încărcată. Încearcă din nou.";
   }
 
   return null;
@@ -192,8 +195,13 @@ export default async function RoomsPage({
       .getAll("photos")
       .filter((file): file is File => file instanceof File && file.size > 0);
 
-    for (const file of files) {
-      await uploadRoomPhoto(serverSupabase, serverOwnerId, propertyId, roomId, file);
+    try {
+      for (const file of files) {
+        await uploadRoomPhoto(serverSupabase, serverOwnerId, propertyId, roomId, file);
+      }
+    } catch (error) {
+      console.error("[room photos] failed to upload", error);
+      redirect(propertyScopedHref("/app/rooms?message=photo-error", propertyId));
     }
 
     revalidatePath("/app/rooms");
@@ -253,3 +261,4 @@ export default async function RoomsPage({
     />
   );
 }
+

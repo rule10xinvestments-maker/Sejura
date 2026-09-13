@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PropertyPage from "@/app/(protected)/app/property/page";
@@ -38,9 +38,10 @@ vi.mock("@/components/property/property-photos", () => ({
   PropertyPhotos: ({ loadError }: { loadError?: boolean }) => (
     <section aria-label="Poze pensiune">
       <h2>Poze pensiune</h2>
-      <p>Adaugă poze</p>
+      <p>Încarcă poză</p>
+      <p>Fă poză</p>
       <p>Alege poza principală</p>
-      <p>Poza principală apare prima pe pagina publică.</p>
+      <p>Pozele sunt opționale. Poza principală apare prima pe pagina publică.</p>
       <p>Pozele sunt opționale.</p>
       <p>Nu ai adăugat poze încă.</p>
       {loadError ? <p>Pozele nu au putut fi încărcate momentan.</p> : null}
@@ -127,7 +128,8 @@ describe("PropertyPage", () => {
       "/app/settings?propertyId=property-1"
     );
     expect(screen.getByRole("heading", { name: "Poze pensiune" })).toBeVisible();
-    expect(screen.getByText("Adaugă poze")).toBeVisible();
+    expect(screen.getByText("Încarcă poză")).toBeVisible();
+    expect(screen.getByText("Fă poză")).toBeVisible();
     expect(screen.getByText("Alege poza principală")).toBeVisible();
     expect(screen.getByText("Nu ai adăugat poze încă.")).toBeVisible();
   });
@@ -165,3 +167,5 @@ describe("PropertyPage", () => {
     expect(screen.getByText("Pozele nu au putut fi încărcate momentan.")).toBeVisible();
   });
 });
+
+

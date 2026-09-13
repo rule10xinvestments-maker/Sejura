@@ -1,3 +1,4 @@
+import React from "react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { SettingsPanel } from "@/components/settings/settings-panel";
@@ -16,19 +17,22 @@ type SearchParams = {
   status?: string;
 };
 
+type LoadedPropertySettings = Awaited<ReturnType<typeof getPropertySettings>>;
+
 function statusMessage(status?: string) {
   if (status === "ai-enabled") return "AI a fost activat.";
   if (status === "ai-disabled") return "AI a fost dezactivat.";
-  if (status === "public-enabled") return "Rezervarile publice au fost activate.";
-  if (status === "public-disabled") return "Rezervarile publice au fost dezactivate.";
+  if (status === "public-enabled") return "Rezervările publice au fost activate.";
+  if (status === "public-disabled") return "Rezervările publice au fost dezactivate.";
   if (status === "calendar-required") {
-    return "Google Calendar este obligatoriu pentru confirmarea rezervarilor.";
+    return "Google Calendar este obligatoriu pentru confirmarea rezervărilor.";
   }
   if (status === "calendar-optional") {
-    return "Confirmarea rezervarilor este permisa si fara Google Calendar.";
+    return "Confirmarea rezervărilor este permisă și fără Google Calendar.";
   }
-  if (status === "auto-disabled") return "Confirmarea automata este dezactivata pentru pilot.";
-  if (status === "error") return "Setarile nu au putut fi salvate. Incearca din nou.";
+  if (status === "auto-disabled") return "Confirmarea automată este dezactivată pentru pilot.";
+  if (status === "load-error") return "Setările nu au putut fi încărcate momentan.";
+  if (status === "error") return "Setările nu au putut fi salvate. Încearcă din nou.";
   return null;
 }
 
@@ -40,9 +44,17 @@ export default async function SettingsPage({
   const supabase = createSupabaseServerClient();
   const ownerId = await getCurrentOwnerId(supabase);
   const property = await getSelectedProperty(supabase, ownerId, searchParams?.propertyId);
-  const settings = property
-    ? await getPropertySettings(supabase, ownerId, property.id)
-    : null;
+  let settings: LoadedPropertySettings = null;
+  let settingsLoadError = false;
+
+  if (property) {
+    try {
+      settings = await getPropertySettings(supabase, ownerId, property.id);
+    } catch (error) {
+      settingsLoadError = true;
+      console.error("[settings] failed to load", error);
+    }
+  }
 
   async function toggleAi(formData: FormData) {
     "use server";
@@ -148,18 +160,18 @@ export default async function SettingsPage({
     redirect(propertyScopedHref("/app/settings?status=auto-disabled", propertyId));
   }
 
-  const message = statusMessage(searchParams?.status);
+  const message = statusMessage(settingsLoadError ? "load-error" : searchParams?.status);
 
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-clay">Setari</p>
+        <p className="text-sm font-semibold text-clay">Setări</p>
         <h1 className="text-2xl font-bold">Reguli sigure pilot</h1>
       </div>
       {message ? (
         <p
           className={`rounded-md border px-3 py-2 text-sm ${
-            searchParams?.status === "error"
+            searchParams?.status === "error" || settingsLoadError
               ? "border-red-200 bg-red-50 text-red-800"
               : "border-emerald-200 bg-emerald-50 text-emerald-800"
           }`}

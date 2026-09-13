@@ -21,7 +21,7 @@ export function SettingsPanel({
     return (
       <section className="panel">
         <p className="text-sm text-ink/70">
-          Setarile apar dupa ce creezi prima proprietate.
+          Setările apar după ce creezi prima proprietate.
         </p>
       </section>
     );
@@ -34,7 +34,7 @@ export function SettingsPanel({
           <div>
             <p className="font-medium">AI</p>
             <p className="text-sm text-ink/65">
-              Activeaza sau dezactiveaza asistentul Jonny pentru pagina publica.
+              Activează sau dezactivează asistentul Jonny pentru pagina publică.
             </p>
           </div>
           <form action={toggleAiAction}>
@@ -56,9 +56,9 @@ export function SettingsPanel({
 
         <div className="flex flex-col gap-2 border-b border-line pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-medium">Rezervari publice</p>
+            <p className="font-medium">Rezervări publice</p>
             <p className="text-sm text-ink/65">
-              Controleaza disponibilitatea paginii publice de rezervari.
+              Controlează disponibilitatea paginii publice de rezervări.
             </p>
           </div>
           <form action={publicBookingsAction}>
@@ -84,8 +84,8 @@ export function SettingsPanel({
           <div>
             <p className="font-medium">Google Calendar obligatoriu</p>
             <p className="text-sm text-ink/65">
-              Cand este dezactivat, confirmarea merge in Sejura chiar daca
-              sincronizarea calendarului esueaza.
+              Când este dezactivat, confirmarea merge în Sejura chiar dacă
+              sincronizarea calendarului eșuează.
             </p>
           </div>
           <form action={toggleCalendarRequiredAction}>
@@ -106,16 +106,16 @@ export function SettingsPanel({
             >
               {settings.calendar_required_for_confirmation
                 ? "Obligatoriu"
-                : "Optional"}
+                : "Opțional"}
             </button>
           </form>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-medium">Confirmare automata</p>
+            <p className="font-medium">Confirmare automată</p>
             <p className="text-sm text-ink/65">
-              Pentru pilot, Jonny trimite doar cereri in asteptare catre proprietar.
+              Pentru pilot, Jonny trimite doar cereri în așteptare către proprietar.
             </p>
           </div>
           <form action={autoConfirmationAction}>
@@ -126,20 +126,20 @@ export function SettingsPanel({
               className="button-secondary opacity-75"
               type="submit"
             >
-              Dezactivata pentru pilot
+              Dezactivată pentru pilot
             </button>
           </form>
         </div>
       </div>
       <p className="mt-4 text-sm text-ink/65" id="auto-confirmation-pilot-note">
-        Pentru pilot, Jonny si cererile publice se folosesc doar in modul in
-        asteptare. Confirmarea automata ramane dezactivata.
+        Pentru pilot, Jonny și cererile publice se folosesc doar în modul în
+        așteptare. Confirmarea automată rămâne dezactivată.
       </p>
       <Link
         className="button-secondary mt-4 inline-flex"
         href="/app/settings/google-calendar"
       >
-        Setari Google Calendar
+        Setări Google Calendar
       </Link>
     </section>
   );

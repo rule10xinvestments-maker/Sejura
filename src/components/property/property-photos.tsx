@@ -23,9 +23,8 @@ export function PropertyPhotos({
       <div>
         <h2 className="text-lg font-semibold">Poze pensiune</h2>
         <p className="mt-1 text-sm text-ink/65">
-          Poza principală apare prima pe pagina publică.
+          Pozele sunt opționale. Poza principală apare prima pe pagina publică.
         </p>
-        <p className="mt-1 text-sm text-ink/65">Pozele sunt opționale.</p>
       </div>
 
       {loadError ? (
@@ -37,17 +36,27 @@ export function PropertyPhotos({
       <form action={uploadAction} className="grid gap-3">
         <input name="property_id" type="hidden" value={property.id} />
         <label className="block space-y-1">
-          <span className="label">Adaugă poze</span>
+          <span className="label">Încarcă poză</span>
           <input
-            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-            className="field"
+            accept="image/jpeg,image/png,image/webp"
+            className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-moss file:px-3 file:py-2 file:font-semibold file:text-white"
             multiple
             name="photos"
             type="file"
           />
         </label>
+        <label className="block space-y-1">
+          <span className="label">Fă poză</span>
+          <input
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            className="field min-h-11 file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold file:text-moss"
+            name="photos"
+            type="file"
+          />
+        </label>
         <button className="button-primary w-full sm:w-fit" type="submit">
-          Adaugă poze
+          Încarcă poză
         </button>
       </form>
 

@@ -36,7 +36,7 @@ describe("SettingsPanel", () => {
     const buttons = screen.getAllByRole("button");
     expect(buttons.map((button) => button.textContent)).toContain("Dezactivat");
     expect(screen.getByText("AI")).toBeVisible();
-    expect(screen.getByText("Rezervari publice")).toBeVisible();
+    expect(screen.getByText("Rezervări publice")).toBeVisible();
   });
 
   it("shows enabled state through pressed buttons", () => {
@@ -50,11 +50,11 @@ describe("SettingsPanel", () => {
     renderPanel({ allow_auto_confirmation: true });
 
     expect(
-      screen.getByRole("button", { name: "Dezactivata pentru pilot" })
+      screen.getByRole("button", { name: "Dezactivată pentru pilot" })
     ).toBeVisible();
     expect(
       screen.getByText(
-        "Pentru pilot, Jonny si cererile publice se folosesc doar in modul in asteptare. Confirmarea automata ramane dezactivata."
+        "Pentru pilot, Jonny și cererile publice se folosesc doar în modul în așteptare. Confirmarea automată rămâne dezactivată."
       )
     ).toBeVisible();
   });
@@ -63,13 +63,13 @@ describe("SettingsPanel", () => {
     renderPanel();
 
     expect(screen.getByText("Google Calendar obligatoriu")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Optional" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Opțional" })).toHaveAttribute(
       "aria-pressed",
       "false"
     );
     expect(
       screen.getByText(
-        "Cand este dezactivat, confirmarea merge in Sejura chiar daca sincronizarea calendarului esueaza."
+        "Când este dezactivat, confirmarea merge în Sejura chiar dacă sincronizarea calendarului eșuează."
       )
     ).toBeVisible();
   });
