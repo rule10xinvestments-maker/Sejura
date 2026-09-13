@@ -14,6 +14,9 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const dynamic = "force-dynamic";
 
+type LoadedPublicPropertyPhotos = Awaited<ReturnType<typeof listPublicPropertyPhotos>>;
+type LoadedPublicRoomPhotos = Awaited<ReturnType<typeof listPublicRoomPhotos>>;
+
 function DoorInIcon() {
   return (
     <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
@@ -119,18 +122,25 @@ export default async function PublicPropertyPage({
     );
   }
 
-  const [{ data: roomsData, error: roomsError }, propertyPhotos, roomPhotos] =
-    await Promise.all([
-      supabase
-        .from("rooms")
-        .select("*")
-        .eq("property_id", context.property.id)
-        .eq("owner_id", context.property.owner_id)
-        .eq("status", "active")
-        .order("created_at", { ascending: true }),
+  const { data: roomsData, error: roomsError } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("property_id", context.property.id)
+    .eq("owner_id", context.property.owner_id)
+    .eq("status", "active")
+    .order("created_at", { ascending: true });
+
+  let propertyPhotos: LoadedPublicPropertyPhotos = [];
+  let roomPhotos: LoadedPublicRoomPhotos = [];
+
+  try {
+    [propertyPhotos, roomPhotos] = await Promise.all([
       listPublicPropertyPhotos(supabase, context.property.id),
       listPublicRoomPhotos(supabase, context.property.id)
     ]);
+  } catch (error) {
+    console.error("[public property photos] failed to load", error);
+  }
 
   if (roomsError) {
     throw roomsError;

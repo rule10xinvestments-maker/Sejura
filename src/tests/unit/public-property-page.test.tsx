@@ -15,6 +15,10 @@ const getUser = vi.fn();
 const roomsQuery = vi.hoisted(() => ({
   order: vi.fn()
 }));
+const photoMocks = vi.hoisted(() => ({
+  listPublicPropertyPhotos: vi.fn(),
+  listPublicRoomPhotos: vi.fn()
+}));
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(() => ({
@@ -45,8 +49,8 @@ vi.mock("@/domain/photos/service", async () => {
 
   return {
     ...actual,
-    listPublicPropertyPhotos: vi.fn(() => Promise.resolve([])),
-    listPublicRoomPhotos: vi.fn(() => Promise.resolve([]))
+    listPublicPropertyPhotos: photoMocks.listPublicPropertyPhotos,
+    listPublicRoomPhotos: photoMocks.listPublicRoomPhotos
   };
 });
 
@@ -122,6 +126,8 @@ describe("public property page", () => {
       ],
       error: null
     });
+    photoMocks.listPublicPropertyPhotos.mockResolvedValue([]);
+    photoMocks.listPublicRoomPhotos.mockResolvedValue([]);
     vi.spyOn(PublicConversationService.prototype, "getPublicPageReadiness").mockResolvedValue(
       readiness
     );
@@ -149,5 +155,17 @@ describe("public property page", () => {
     expect(screen.getByText("Camera Verde")).toBeVisible();
     expect(screen.getByText("până la 2 oaspeți")).toBeVisible();
     expect(screen.getByText("de la 260 RON/noapte")).toBeVisible();
+  });
+
+  it("keeps the public page working when photo rows cannot be loaded", async () => {
+    photoMocks.listPublicPropertyPhotos.mockRejectedValueOnce(
+      new Error("photo table unavailable")
+    );
+
+    render(await PublicPropertyPage({ params: { propertySlug: "pestera-pusnicului" } }));
+
+    expect(screen.getByText("Peștera Pusnicului")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Camere disponibile" })).toBeVisible();
+    expect(screen.getByLabelText("Jonny chat")).toBeVisible();
   });
 });

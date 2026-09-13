@@ -27,6 +27,8 @@ import { roomFormSchema } from "@/domain/rooms/schemas";
 import { getCurrentOwnerId } from "@/lib/auth/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+type LoadedRoomPhotos = Awaited<ReturnType<typeof listRoomPhotos>>;
+
 function getRoomPageMessage(messageKey?: string) {
   if (messageKey === "room-deactivated") {
     return "Camera a fost dezactivat\u0103.";
@@ -50,9 +52,17 @@ export default async function RoomsPage({
   const ownerId = await getCurrentOwnerId(supabase);
   const property = await getSelectedProperty(supabase, ownerId, searchParams?.propertyId);
   const rooms = property ? await listRooms(supabase, ownerId, property.id) : [];
-  const roomPhotos = property
-    ? await listRoomPhotos(supabase, ownerId, property.id)
-    : [];
+  let roomPhotos: LoadedRoomPhotos = [];
+  let roomPhotoLoadError = false;
+
+  if (property) {
+    try {
+      roomPhotos = await listRoomPhotos(supabase, ownerId, property.id);
+    } catch (error) {
+      roomPhotoLoadError = true;
+      console.error("[room photos] failed to load", error);
+    }
+  }
   const repository = new SupabaseBookingRepository(supabase);
   const bookings = property
     ? await new BookingService(repository).listBookings({
@@ -233,6 +243,7 @@ export default async function RoomsPage({
       checkInTime={property?.check_in_time}
       checkOutTime={property?.check_out_time}
       successMessage={getRoomPageMessage(searchParams?.message)}
+      photoLoadError={roomPhotoLoadError}
       saveAction={saveRoom}
       deactivateAction={deactivate}
       deleteAction={deleteRoom}

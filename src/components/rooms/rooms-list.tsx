@@ -19,6 +19,7 @@ type RoomsListProps = {
   checkInTime?: string | null;
   checkOutTime?: string | null;
   successMessage?: string | null;
+  photoLoadError?: boolean;
   roomPhotos?: RoomPhoto[];
   saveAction: (
     state: RoomFormState,
@@ -40,6 +41,7 @@ export function RoomsList({
   checkInTime,
   checkOutTime,
   successMessage,
+  photoLoadError = false,
   roomPhotos = [],
   saveAction,
   deactivateAction,
@@ -80,6 +82,12 @@ export function RoomsList({
       {successMessage ? (
         <p aria-live="polite" className="rounded-md border border-line bg-white px-3 py-2 text-sm font-medium text-moss">
           {successMessage}
+        </p>
+      ) : null}
+
+      {photoLoadError ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+          Pozele nu au putut fi încărcate momentan.
         </p>
       ) : null}
 
@@ -378,7 +386,11 @@ export function RoomsList({
                     </article>
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <p className="mt-3 rounded-md border border-dashed border-line bg-white px-3 py-3 text-sm text-ink/70">
+                  Nu ai adăugat poze încă.
+                </p>
+              )}
             </section>
             <details className="mt-4">
               <summary className="cursor-pointer text-sm font-semibold text-moss">

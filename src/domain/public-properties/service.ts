@@ -107,17 +107,24 @@ export async function getPublicPropertyListings(
     throw roomsError;
   }
 
-  const { listPublicPropertyPhotos } = await import("@/domain/photos/service");
-  const propertyPhotos = await Promise.all(
-    visiblePropertyIds.map((propertyId) =>
-      listPublicPropertyPhotos(supabase, propertyId)
-    )
-  );
+  let propertyPhotos: PropertyPhotoRow[] = [];
+
+  try {
+    const { listPublicPropertyPhotos } = await import("@/domain/photos/service");
+    const photosByProperty = await Promise.all(
+      visiblePropertyIds.map((propertyId) =>
+        listPublicPropertyPhotos(supabase, propertyId)
+      )
+    );
+    propertyPhotos = photosByProperty.flat();
+  } catch (error) {
+    console.error("[guest property photos] failed to load", error);
+  }
 
   return buildPublicPropertyListings({
     publicPages: publicPages ?? [],
     properties: properties ?? [],
     rooms: rooms ?? [],
-    propertyPhotos: propertyPhotos.flat()
+    propertyPhotos
   });
 }

@@ -35,7 +35,17 @@ vi.mock("@/domain/photos/service", () => ({
 }));
 
 vi.mock("@/components/property/property-photos", () => ({
-  PropertyPhotos: () => <section aria-label="Poze pensiune" />
+  PropertyPhotos: ({ loadError }: { loadError?: boolean }) => (
+    <section aria-label="Poze pensiune">
+      <h2>Poze pensiune</h2>
+      <p>Adaugă poze</p>
+      <p>Alege poza principală</p>
+      <p>Poza principală apare prima pe pagina publică.</p>
+      <p>Pozele sunt opționale.</p>
+      <p>Nu ai adăugat poze încă.</p>
+      {loadError ? <p>Pozele nu au putut fi încărcate momentan.</p> : null}
+    </section>
+  )
 }));
 
 vi.mock("@/components/property/property-form", () => ({
@@ -100,5 +110,58 @@ describe("PropertyPage", () => {
       "href",
       "/app/property?propertyId=property-2"
     );
+    expect(screen.getByRole("link", { name: "Camere" })).toHaveAttribute(
+      "href",
+      "/app/rooms?propertyId=property-1"
+    );
+    expect(screen.getByRole("link", { name: "Rezervări" })).toHaveAttribute(
+      "href",
+      "/app/bookings?propertyId=property-1"
+    );
+    expect(screen.getByRole("link", { name: "Calendar" })).toHaveAttribute(
+      "href",
+      "/app/calendar?propertyId=property-1"
+    );
+    expect(screen.getByRole("link", { name: "Setări" })).toHaveAttribute(
+      "href",
+      "/app/settings?propertyId=property-1"
+    );
+    expect(screen.getByRole("heading", { name: "Poze pensiune" })).toBeVisible();
+    expect(screen.getByText("Adaugă poze")).toBeVisible();
+    expect(screen.getByText("Alege poza principală")).toBeVisible();
+    expect(screen.getByText("Nu ai adăugat poze încă.")).toBeVisible();
+  });
+
+  it("updates active property and form details when propertyId changes", async () => {
+    propertyMocks.getSelectedProperty.mockResolvedValue(
+      property({
+        id: "property-2",
+        name: "Cabana B",
+        slug: "cabana-b",
+        city: "Sinaia"
+      })
+    );
+
+    render(await PropertyPage({ searchParams: { propertyId: "property-2" } }));
+
+    expect(propertyMocks.getSelectedProperty).toHaveBeenCalledWith(
+      {},
+      "owner-1",
+      "property-2"
+    );
+    expect(screen.getByTestId("property-form")).toHaveTextContent("Editare Cabana B");
+    expect(screen.getByRole("link", { name: "Camere" })).toHaveAttribute(
+      "href",
+      "/app/rooms?propertyId=property-2"
+    );
+  });
+
+  it("keeps property page visible when photo loading fails", async () => {
+    propertyMocks.listPropertyPhotos.mockRejectedValueOnce(new Error("storage failed"));
+
+    render(await PropertyPage({ searchParams: { propertyId: "property-1" } }));
+
+    expect(screen.getByText("Pensiunea A")).toBeVisible();
+    expect(screen.getByText("Pozele nu au putut fi încărcate momentan.")).toBeVisible();
   });
 });

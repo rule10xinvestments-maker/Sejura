@@ -4,6 +4,7 @@ import type { Property } from "@/domain/properties/types";
 type PropertyPhotosProps = {
   property: Property;
   photos: PropertyPhoto[];
+  loadError?: boolean;
   uploadAction: (formData: FormData) => void | Promise<void>;
   coverAction: (formData: FormData) => void | Promise<void>;
   removeAction: (formData: FormData) => void | Promise<void>;
@@ -12,6 +13,7 @@ type PropertyPhotosProps = {
 export function PropertyPhotos({
   property,
   photos,
+  loadError = false,
   uploadAction,
   coverAction,
   removeAction
@@ -25,6 +27,12 @@ export function PropertyPhotos({
         </p>
         <p className="mt-1 text-sm text-ink/65">Pozele sunt opționale.</p>
       </div>
+
+      {loadError ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+          Pozele nu au putut fi încărcate momentan.
+        </p>
+      ) : null}
 
       <form action={uploadAction} className="grid gap-3">
         <input name="property_id" type="hidden" value={property.id} />
@@ -80,7 +88,11 @@ export function PropertyPhotos({
             </article>
           ))}
         </div>
-      ) : null}
+      ) : (
+        <p className="rounded-md border border-dashed border-line bg-mist px-3 py-3 text-sm text-ink/70">
+          Nu ai adăugat poze încă.
+        </p>
+      )}
     </section>
   );
 }

@@ -30,6 +30,8 @@ type SearchParams = {
   propertyId?: string;
 };
 
+type LoadedPropertyPhotos = Awaited<ReturnType<typeof listPropertyPhotos>>;
+
 function statusCopy(status: string) {
   if (status === "disabled") return "Dezactivată";
   if (status === "ready_pending_mode") return "Pregătită";
@@ -51,9 +53,17 @@ export default async function PropertyPage({
     ownerId,
     searchParams?.propertyId
   );
-  const propertyPhotos = property
-    ? await listPropertyPhotos(supabase, ownerId, property.id)
-    : [];
+  let propertyPhotos: LoadedPropertyPhotos = [];
+  let propertyPhotoLoadError = false;
+
+  if (property) {
+    try {
+      propertyPhotos = await listPropertyPhotos(supabase, ownerId, property.id);
+    } catch (error) {
+      propertyPhotoLoadError = true;
+      console.error("[property photos] failed to load", error);
+    }
+  }
 
   async function saveProperty(
     _state: PropertyFormState,
@@ -242,6 +252,7 @@ export default async function PropertyPage({
                     <Link
                       className="button-secondary min-h-11 justify-center"
                       href={propertyScopedHref("/app/property", item.id)}
+                      prefetch={false}
                     >
                       Administrează
                     </Link>
@@ -255,10 +266,49 @@ export default async function PropertyPage({
 
       {property ? (
         <>
+          <section className="panel">
+            <h2 className="text-lg font-semibold">Administrează proprietatea activă</h2>
+            <p className="mt-1 text-sm text-ink/65">
+              Linkurile de mai jos păstrează proprietatea selectată.
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-4">
+              <Link
+                className="button-secondary min-h-11 justify-center"
+                href={propertyScopedHref("/app", property.id)}
+              >
+                Panou
+              </Link>
+              <Link
+                className="button-secondary min-h-11 justify-center"
+                href={propertyScopedHref("/app/rooms", property.id)}
+              >
+                Camere
+              </Link>
+              <Link
+                className="button-secondary min-h-11 justify-center"
+                href={propertyScopedHref("/app/bookings", property.id)}
+              >
+                Rezervări
+              </Link>
+              <Link
+                className="button-secondary min-h-11 justify-center"
+                href={propertyScopedHref("/app/calendar", property.id)}
+              >
+                Calendar
+              </Link>
+              <Link
+                className="button-secondary min-h-11 justify-center"
+                href={propertyScopedHref("/app/settings", property.id)}
+              >
+                Setări
+              </Link>
+            </div>
+          </section>
           <PropertyForm property={property} action={saveProperty} />
           <PropertyPhotos
             property={property}
             photos={propertyPhotos}
+            loadError={propertyPhotoLoadError}
             uploadAction={uploadPhotos}
             coverAction={chooseCoverPhoto}
             removeAction={removePhoto}

@@ -154,6 +154,26 @@ describe("RoomsList", () => {
       "type",
       "button"
     );
+    expect(screen.getByText("Poze cameră")).toBeVisible();
+    expect(screen.getByText("Adaugă poze pentru această cameră")).toBeVisible();
+    expect(screen.getByText("Pozele sunt opționale.")).toBeVisible();
+    expect(screen.getByText("Nu ai adăugat poze încă.")).toBeVisible();
+  });
+
+  it("shows a safe fallback when room photos cannot be loaded", () => {
+    render(
+      <RoomsList
+        deactivateAction={vi.fn()}
+        deleteAction={vi.fn()}
+        photoLoadError
+        property={property}
+        rooms={[room]}
+        saveAction={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Pozele nu au putut fi încărcate momentan.")).toBeVisible();
+    expect(screen.getByText("Camera Verde")).toBeVisible();
   });
 
   it("renders room occupancy details and booking links for owners", () => {
