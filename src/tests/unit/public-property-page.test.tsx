@@ -42,6 +42,10 @@ vi.mock("@/lib/supabase/service-role", () => ({
   }))
 }));
 
+vi.mock("@/lib/supabase/health", () => ({
+  checkSupabaseReachability: vi.fn()
+}));
+
 vi.mock("@/domain/photos/service", async () => {
   const actual = await vi.importActual<typeof import("@/domain/photos/service")>(
     "@/domain/photos/service"
@@ -53,6 +57,9 @@ vi.mock("@/domain/photos/service", async () => {
     listPublicRoomPhotos: photoMocks.listPublicRoomPhotos
   };
 });
+
+const { checkSupabaseReachability } = await import("@/lib/supabase/health");
+const mockedCheckSupabaseReachability = vi.mocked(checkSupabaseReachability);
 
 const readiness: PublicPageReadiness = {
   ok: true,
@@ -128,6 +135,10 @@ describe("public property page", () => {
     });
     photoMocks.listPublicPropertyPhotos.mockResolvedValue([]);
     photoMocks.listPublicRoomPhotos.mockResolvedValue([]);
+    mockedCheckSupabaseReachability.mockResolvedValue({
+      ok: true,
+      host: "supabase.test"
+    });
     vi.spyOn(PublicConversationService.prototype, "getPublicPageReadiness").mockResolvedValue(
       readiness
     );
@@ -167,5 +178,48 @@ describe("public property page", () => {
     expect(screen.getByText("Peștera Pusnicului")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Camere disponibile" })).toBeVisible();
     expect(screen.getByLabelText("Jonny chat")).toBeVisible();
+  });
+
+  it("renders a safe fallback when Supabase readiness cannot be loaded", async () => {
+    vi.spyOn(PublicConversationService.prototype, "getPublicPageReadiness").mockRejectedValue(
+      new Error("supabase unreachable")
+    );
+
+    render(await PublicPropertyPage({ params: { propertySlug: "pestera-pusnicului" } }));
+
+    expect(
+      screen.getByText("Aplicația nu se poate conecta momentan. Reîncearcă.")
+    ).toBeVisible();
+  });
+
+  it("renders a safe fallback before data queries when Supabase health check fails", async () => {
+    mockedCheckSupabaseReachability.mockResolvedValue({
+      ok: false,
+      host: "supabase.test",
+      reason: "unreachable"
+    });
+    const readinessSpy = vi.spyOn(
+      PublicConversationService.prototype,
+      "getPublicPageReadiness"
+    );
+
+    render(await PublicPropertyPage({ params: { propertySlug: "pestera-pusnicului" } }));
+
+    expect(readinessSpy).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Aplicația nu se poate conecta momentan. Reîncearcă.")
+    ).toBeVisible();
+  });
+
+  it("keeps the public page open when room loading fails", async () => {
+    roomsQuery.order.mockResolvedValueOnce({
+      data: null,
+      error: new Error("rooms unavailable")
+    });
+
+    render(await PublicPropertyPage({ params: { propertySlug: "pestera-pusnicului" } }));
+
+    expect(screen.getByText("Peștera Pusnicului")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Camere disponibile" })).not.toBeInTheDocument();
   });
 });

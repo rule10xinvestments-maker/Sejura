@@ -14,8 +14,16 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/auth/auth-form", () => ({
-  AuthForm: ({ mode }: { mode: string }) => (
-    <div data-testid="auth-form">Auth form: {mode}</div>
+  AuthForm: ({
+    initialError,
+    mode
+  }: {
+    initialError?: string | null;
+    mode: string;
+  }) => (
+    <div data-initial-error={initialError ?? ""} data-testid="auth-form">
+      Auth form: {mode}
+    </div>
   )
 }));
 
@@ -38,15 +46,27 @@ describe("sign-in page auth state", () => {
       data: { user: { id: "owner-1" } }
     });
 
-    await expect(SignInPage()).rejects.toThrow("redirect:/app");
+    await expect(SignInPage({})).rejects.toThrow("redirect:/app");
   });
 
   it("renders sign-in form for unauthenticated visitors", async () => {
     signInMocks.getUser.mockResolvedValue({ data: { user: null } });
 
-    const element = await SignInPage();
+    const element = await SignInPage({});
 
     expect(element.props.mode).toBe("sign-in");
+    expect(signInMocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it("renders sign-in form with safe fallback when session refresh fails", async () => {
+    signInMocks.getUser.mockRejectedValue(new Error("supabase unreachable"));
+
+    const element = await SignInPage({});
+
+    expect(element.props.mode).toBe("sign-in");
+    expect(element.props.initialError).toBe(
+      "Aplicația nu se poate conecta momentan. Reîncearcă."
+    );
     expect(signInMocks.redirect).not.toHaveBeenCalled();
   });
 });

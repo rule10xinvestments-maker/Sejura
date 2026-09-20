@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { SetAllCookies } from "@supabase/ssr";
 import { resolveSupabasePublicEnv } from "@/lib/env";
+import { supabaseFetchWithTimeout } from "@/lib/supabase/fetch";
 import type { AppSupabaseClient, Database } from "@/lib/supabase/types";
 
 export function createSupabaseServerClient(): AppSupabaseClient {
@@ -12,6 +13,9 @@ export function createSupabaseServerClient(): AppSupabaseClient {
     url,
     publicKey,
     {
+      global: {
+        fetch: supabaseFetchWithTimeout
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();

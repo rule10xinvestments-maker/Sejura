@@ -102,6 +102,42 @@ describe("AuthForm", () => {
     expect(screen.queryByText(secretLikeValue)).not.toBeInTheDocument();
   });
 
+  it("shows the app connection fallback passed by the sign-in page", () => {
+    render(
+      <AuthForm
+        initialError="Aplicația nu se poate conecta momentan. Reîncearcă."
+        mode="sign-in"
+      />
+    );
+
+    expect(
+      screen.getByText("Aplicația nu se poate conecta momentan. Reîncearcă.")
+    ).toBeVisible();
+  });
+
+  it("starts Google login through the Sejura app route", () => {
+    const assign = vi.fn();
+    const originalLocation = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        assign
+      }
+    });
+
+    render(<AuthForm mode="sign-in" />);
+    fireEvent.click(screen.getByRole("button", { name: "Continuă cu Google" }));
+
+    expect(assign).toHaveBeenCalledWith("/api/auth/google/start?next=/app");
+    expect(authMocks.signInWithOAuth).not.toHaveBeenCalled();
+
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: originalLocation
+    });
+  });
+
   it("toggles password visibility without submitting", () => {
     render(<AuthForm mode="sign-up" />);
 

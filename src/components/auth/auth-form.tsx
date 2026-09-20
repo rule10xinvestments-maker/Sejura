@@ -11,9 +11,11 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthFormProps = {
   mode: "sign-in" | "sign-up";
+  routeError?: string | null;
+  initialError?: string | null;
 };
 
-export function AuthForm({ mode }: AuthFormProps) {
+export function AuthForm({ initialError = null, mode, routeError = null }: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,6 +23,15 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const isSignUp = mode === "sign-up";
+  const routeErrorMessage =
+    routeError === "supabase-unavailable"
+      ? "Aplicația nu se poate conecta momentan. Reîncearcă."
+      : routeError === "google-auth-start-failed" ||
+          routeError === "google-auth-failed"
+        ? "Autentificarea cu Google nu a putut fi pornită. Reîncearcă."
+        : routeError === "google-auth-missing-code"
+          ? "Autentificarea cu Google nu a trimis codul necesar. Reîncearcă."
+          : null;
   let supabase: ReturnType<typeof createSupabaseBrowserClient> | null = null;
   let configError: EnvConfigError | null = null;
 
@@ -80,18 +91,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       return;
     }
 
-    const origin = window.location.origin;
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${origin}/auth/callback?next=/app`
-      }
-    });
-
-    if (oauthError) {
-      setError(oauthError.message);
-      setGoogleLoading(false);
-    }
+    window.location.assign("/api/auth/google/start?next=/app");
   }
 
   return (
@@ -208,9 +208,9 @@ export function AuthForm({ mode }: AuthFormProps) {
             </div>
           ) : null}
 
-          {error ? (
+          {error || routeErrorMessage || initialError ? (
             <p aria-live="polite" className="text-sm text-red-700">
-              {error}
+              {error ?? routeErrorMessage ?? initialError}
             </p>
           ) : null}
 

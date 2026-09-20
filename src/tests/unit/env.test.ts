@@ -3,6 +3,7 @@ import {
   EnvConfigError,
   resolveSupabasePublicEnv
 } from "@/lib/env";
+import { getSupabasePublicConfigStatus } from "@/lib/supabase/health";
 
 describe("resolveSupabasePublicEnv", () => {
   it("resolves the public Supabase key from NEXT_PUBLIC_SUPABASE_ANON_KEY", () => {
@@ -50,5 +51,18 @@ describe("resolveSupabasePublicEnv", () => {
       expect(String(error)).not.toContain(secretLikeValue);
     }
   });
-});
 
+  it("describes public Supabase config without exposing keys", () => {
+    const secretLikeValue = "secret-value-that-must-not-appear";
+    const status = getSupabasePublicConfigStatus({
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: secretLikeValue
+    });
+
+    expect(status).toEqual({
+      ok: true,
+      host: "example.supabase.co"
+    });
+    expect(JSON.stringify(status)).not.toContain(secretLikeValue);
+  });
+});

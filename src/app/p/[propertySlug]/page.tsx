@@ -10,6 +10,7 @@ import {
 } from "@/domain/photos/service";
 import { jonnyIntro, PublicConversationService } from "@/domain/public-chat/service";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { checkSupabaseReachability } from "@/lib/supabase/health";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const dynamic = "force-dynamic";
@@ -92,19 +93,52 @@ function formatPublicTime(time: string | null) {
   return time.slice(0, 5);
 }
 
+function PublicConnectionFallback() {
+  return (
+    <main className="min-h-[100svh] bg-mist px-4 py-10">
+      <div className="mx-auto max-w-3xl space-y-4">
+        <SejuraLogo size="sm" />
+        <section className="panel">
+          <p>Aplicația nu se poate conecta momentan. Reîncearcă.</p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
 export default async function PublicPropertyPage({
   params
 }: {
   params: { propertySlug: string };
 }) {
-  const supabase = createSupabaseServiceRoleClient();
-  const service = new PublicConversationService(supabase);
-  const readiness = await service.getPublicPageReadiness(params.propertySlug);
+  let readiness: Awaited<ReturnType<PublicConversationService["getPublicPageReadiness"]>>;
+  let supabase: ReturnType<typeof createSupabaseServiceRoleClient>;
+  const health = await checkSupabaseReachability(process.env, 1500);
+
+  if (!health.ok) {
+    return <PublicConnectionFallback />;
+  }
+
+  try {
+    supabase = createSupabaseServiceRoleClient();
+    const service = new PublicConversationService(supabase);
+    readiness = await service.getPublicPageReadiness(params.propertySlug);
+  } catch (error) {
+    console.error("[public property] failed to load readiness", error);
+    return <PublicConnectionFallback />;
+  }
+
   const context = readiness.context;
-  const ownerClient = createSupabaseServerClient();
-  const {
-    data: { user }
-  } = await ownerClient.auth.getUser();
+  let user: { id: string } | null = null;
+
+  try {
+    const ownerClient = createSupabaseServerClient();
+    const response = await ownerClient.auth.getUser();
+    user = response.data.user;
+  } catch (error) {
+    console.error("[public property] failed to load owner session", error);
+  }
+
   const isOwnerViewingOwnPublicPage = Boolean(
     user && context?.property.owner_id === user.id
   );
@@ -143,10 +177,10 @@ export default async function PublicPropertyPage({
   }
 
   if (roomsError) {
-    throw roomsError;
+    console.error("[public property] failed to load rooms", roomsError);
   }
 
-  const rooms = roomsData ?? [];
+  const rooms = roomsError ? [] : roomsData ?? [];
   const coverPhoto = propertyCoverPhoto(propertyPhotos);
 
   return (

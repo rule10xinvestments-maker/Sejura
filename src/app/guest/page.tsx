@@ -3,6 +3,7 @@ import Link from "next/link";
 import React from "react";
 import { SejuraLogo } from "@/components/brand/sejura-logo";
 import { getPublicPropertyListings } from "@/domain/public-properties/service";
+import { checkSupabaseReachability } from "@/lib/supabase/health";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 
 export const dynamic = "force-dynamic";
@@ -98,8 +99,22 @@ function TagIcon() {
 }
 
 export default async function GuestPage() {
-  const supabase = createSupabaseServiceRoleClient();
-  const properties = await getPublicPropertyListings(supabase);
+  let properties: Awaited<ReturnType<typeof getPublicPropertyListings>> = [];
+  let connectionFailed = false;
+
+  const health = await checkSupabaseReachability(process.env, 1500);
+
+  if (!health.ok) {
+    connectionFailed = true;
+  } else {
+    try {
+      const supabase = createSupabaseServiceRoleClient();
+      properties = await getPublicPropertyListings(supabase);
+    } catch (error) {
+      connectionFailed = true;
+      console.error("[guest] failed to load public listings", error);
+    }
+  }
 
   return (
     <main className="relative min-h-[100svh] overflow-hidden bg-[#f4f1e8]">
@@ -149,6 +164,15 @@ export default async function GuestPage() {
               Fără cont
             </span>
           </div>
+
+          {connectionFailed ? (
+            <div
+              aria-live="polite"
+              className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800"
+            >
+              Aplicația nu se poate conecta momentan. Reîncearcă.
+            </div>
+          ) : null}
 
           {properties.length > 0 ? (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -266,7 +290,7 @@ export default async function GuestPage() {
                 </article>
               ))}
             </div>
-          ) : (
+          ) : connectionFailed ? null : (
             <div className="mt-4 rounded-lg border border-dashed border-line bg-mist/80 p-5 text-ink/75">
               <p className="font-semibold text-ink">
                 Încă nu există cazări publice disponibile.

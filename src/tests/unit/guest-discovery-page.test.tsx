@@ -12,11 +12,21 @@ vi.mock("@/domain/public-properties/service", () => ({
   getPublicPropertyListings: vi.fn()
 }));
 
+vi.mock("@/lib/supabase/health", () => ({
+  checkSupabaseReachability: vi.fn()
+}));
+
 const mockedGetPublicPropertyListings = vi.mocked(getPublicPropertyListings);
+const { checkSupabaseReachability } = await import("@/lib/supabase/health");
+const mockedCheckSupabaseReachability = vi.mocked(checkSupabaseReachability);
 
 describe("guest discovery page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedCheckSupabaseReachability.mockResolvedValue({
+      ok: true,
+      host: "supabase.test"
+    });
   });
 
   it("renders public accommodation cards with detail links", async () => {
@@ -81,6 +91,34 @@ describe("guest discovery page", () => {
     expect(screen.getByText("Încă nu există cazări publice disponibile.")).toBeVisible();
     expect(
       screen.getByText("Revino în curând sau accesează linkul primit de la pensiune.")
+    ).toBeVisible();
+  });
+
+  it("renders a safe fallback when Supabase listings cannot be loaded", async () => {
+    mockedGetPublicPropertyListings.mockRejectedValue(new Error("supabase unreachable"));
+
+    render(await GuestPage());
+
+    expect(
+      screen.getByText("Aplicația nu se poate conecta momentan. Reîncearcă.")
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Încă nu există cazări publice disponibile.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not wait for listings when Supabase health check fails", async () => {
+    mockedCheckSupabaseReachability.mockResolvedValue({
+      ok: false,
+      host: "supabase.test",
+      reason: "unreachable"
+    });
+
+    render(await GuestPage());
+
+    expect(mockedGetPublicPropertyListings).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Aplicația nu se poate conecta momentan. Reîncearcă.")
     ).toBeVisible();
   });
 });
