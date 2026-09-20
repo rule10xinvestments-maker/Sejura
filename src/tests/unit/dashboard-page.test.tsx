@@ -70,8 +70,8 @@ function booking(patch: Partial<BookingRecord> = {}): BookingRecord {
     guest_phone: "0700000000",
     guest_email: null,
     guest_notes: null,
-    start_date: "2026-09-14",
-    end_date: "2026-09-17",
+    start_date: "2026-09-19",
+    end_date: "2026-09-22",
     guests_count: 2,
     price_per_night: 220,
     nights_count: 2,
@@ -103,8 +103,8 @@ function block(patch: Partial<RoomBlockRecord> = {}): RoomBlockRecord {
     owner_id: "owner-1",
     property_id: "property-1",
     room_id: "room-blocked",
-    start_date: "2026-09-14",
-    end_date: "2026-09-17",
+    start_date: "2026-09-19",
+    end_date: "2026-09-22",
     reason: "Renovare",
     created_by_owner_id: "owner-1",
     created_at: "2026-09-10T00:00:00.000Z",
@@ -216,8 +216,8 @@ describe("DashboardPage", () => {
           id: "booking-future",
           room_id: "room-future",
           guest_name: "Mihai Ionescu",
-          start_date: "2026-09-20",
-          end_date: "2026-09-22"
+          start_date: "2026-10-20",
+          end_date: "2026-10-22"
         }),
         booking({
           id: "booking-pending",

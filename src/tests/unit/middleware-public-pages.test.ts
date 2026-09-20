@@ -9,6 +9,9 @@ vi.mock("@/lib/supabase/middleware", () => ({
 
 function requestFor(pathname: string) {
   return {
+    cookies: {
+      getAll: () => []
+    },
     nextUrl: new URL(`https://sejura.test${pathname}`)
   } as never;
 }
@@ -18,27 +21,27 @@ describe("middleware public routes", () => {
     vi.clearAllMocks();
   });
 
-  it("refreshes auth cookies without requiring login for public property pages", async () => {
+  it("returns quickly for public property pages without requiring login", async () => {
     const response = await middleware(requestFor("/p/pensiunea-sura-mare"));
 
     expect(updateSession).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(200);
   });
 
-  it("refreshes auth cookies without requiring login for guest discovery", async () => {
+  it("returns quickly for guest discovery without requiring login", async () => {
     const response = await middleware(requestFor("/guest"));
 
     expect(updateSession).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(200);
   });
 
-  it("still protects owner dashboard routes", async () => {
+  it("still delegates owner dashboard routes to the fast auth gate", async () => {
     await middleware(requestFor("/app"));
 
     expect(updateSession).toHaveBeenCalledTimes(1);
   });
 
-  it("refreshes auth cookies while keeping authentication pages public", async () => {
+  it("keeps authentication pages public", async () => {
     const signInResponse = await middleware(requestFor("/sign-in"));
     const signUpResponse = await middleware(requestFor("/sign-up"));
 
@@ -47,7 +50,7 @@ describe("middleware public routes", () => {
     expect(signUpResponse.status).toBe(200);
   });
 
-  it("protects admin routes by default when present", async () => {
+  it("delegates admin routes to the fast auth gate when present", async () => {
     await middleware(requestFor("/admin"));
 
     expect(updateSession).toHaveBeenCalledTimes(1);

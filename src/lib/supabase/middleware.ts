@@ -1,36 +1,62 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import type { SetAllCookies } from "@supabase/ssr";
-import { resolveSupabasePublicEnv } from "@/lib/env";
-import type { Database } from "@/lib/supabase/types";
 
-export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
-  const { url, publicKey } = resolveSupabasePublicEnv();
+const protectedPathPrefixes = ["/app", "/admin"];
+const publicPathPrefixes = [
+  "/",
+  "/guest",
+  "/p",
+  "/sign-in",
+  "/sign-up",
+  "/auth/callback"
+];
 
-  const supabase = createServerClient<Database>(
-    url,
-    publicKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: Parameters<SetAllCookies>[0]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-          });
-
-          response = NextResponse.next({ request });
-
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        }
-      }
-    }
-  );
-
-  await supabase.auth.getUser();
-  return response;
+function isPathOrChild(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
+
+function isProtectedPath(pathname: string) {
+  return protectedPathPrefixes.some((prefix) => isPathOrChild(pathname, prefix));
+}
+
+function isPublicPath(pathname: string) {
+  return publicPathPrefixes.some((prefix) =>
+    prefix === "/" ? pathname === "/" : isPathOrChild(pathname, prefix)
+  );
+}
+
+function hasSupabaseAuthCookie(request: NextRequest) {
+  return request.cookies.getAll().some(({ name, value }) => {
+    if (!value) return false;
+
+    return (
+      name.startsWith("sb-") &&
+      (name.includes("auth-token") ||
+        name.includes("access-token") ||
+        name.includes("refresh-token"))
+    );
+  });
+}
+
+export function updateSession(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (!isProtectedPath(pathname)) {
+    return NextResponse.next({ request });
+  }
+
+  if (hasSupabaseAuthCookie(request)) {
+    return NextResponse.next({ request });
+  }
+
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = "/sign-in";
+  redirectUrl.searchParams.set("next", pathname);
+
+  return NextResponse.redirect(redirectUrl);
+}
+
+export const middlewareInternals = {
+  hasSupabaseAuthCookie,
+  isProtectedPath,
+  isPublicPath
+};
