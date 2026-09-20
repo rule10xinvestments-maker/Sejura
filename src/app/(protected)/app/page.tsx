@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import { RoomOverview } from "@/components/dashboard/room-overview";
+import { DashboardActionCards } from "@/components/dashboard/dashboard-action-cards";
 import {
   buildRoomOccupancySummaries,
   todayInBucharest
@@ -36,12 +36,6 @@ export default async function DashboardPage({
         checkOutTime: property.check_out_time
       })
     : [];
-  const confirmedBookings = bookings.filter(
-    (booking) => booking.status === "confirmed"
-  ).length;
-  const pendingBookings = bookings.filter(
-    (booking) => booking.status === "pending"
-  ).length;
 
   return (
     <div className="space-y-4">
@@ -83,61 +77,15 @@ export default async function DashboardPage({
         )}
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="panel">
-          <p className="text-sm text-ink/60">Proprietate</p>
-          <p className="mt-2 text-xl font-bold">{property ? "1" : "0"}</p>
-        </div>
-        <div className="panel">
-          <p className="text-sm text-ink/60">Camere active</p>
-          <p className="mt-2 text-xl font-bold">
-            {rooms.filter((room) => room.status === "active").length}
-          </p>
-        </div>
-        <div className="panel">
-          <p className="text-sm text-ink/60">Activare</p>
-          <p className="mt-2 text-xl font-bold">
-            {activation.ready ? "Gata" : "In lucru"}
-          </p>
-        </div>
-        <div className="panel sm:col-span-3">
-          <p className="text-sm text-ink/60">Rezervari active</p>
-          <p className="mt-2 text-xl font-bold">{confirmedBookings}</p>
-        </div>
-        <div
-          className={
-            pendingBookings > 0
-              ? "rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-soft sm:col-span-3"
-              : "panel sm:col-span-3"
-          }
-        >
-          <p className="text-sm text-ink/60">Rezervari in asteptare</p>
-          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xl font-bold">{pendingBookings}</p>
-            {pendingBookings > 0 ? (
-              <Link
-                className="button-primary min-h-10 px-3 py-1"
-                href={propertyScopedHref("/app/bookings", property?.id)}
-              >
-                Confirma sau respinge
-              </Link>
-            ) : null}
-          </div>
-        </div>
-        <div className="panel sm:col-span-3">
-          <p className="text-sm text-ink/60">Actiuni noi</p>
-          <p className="mt-2 text-xl font-bold">{notifications.unreadCount}</p>
-        </div>
-      </section>
-
-      {property ? (
-        <RoomOverview
-          rooms={rooms}
-          occupancySummaries={occupancySummaries}
-          checkInTime={property.check_in_time}
-          checkOutTime={property.check_out_time}
-        />
-      ) : null}
+      <DashboardActionCards
+        activation={activation}
+        bookings={bookings}
+        googleConnection={googleConnection}
+        notifications={notifications}
+        occupancySummaries={occupancySummaries}
+        property={property}
+        rooms={rooms}
+      />
 
       {googleConnection?.status === "needs_reconnect" ||
       googleConnection?.status === "error" ? (
@@ -149,7 +97,7 @@ export default async function DashboardPage({
           </p>
           <Link
             className="button-secondary mt-3 inline-flex"
-            href="/app/settings/google-calendar"
+            href={propertyScopedHref("/app/settings/google-calendar", property?.id)}
           >
             Reconnecteaza Google Calendar
           </Link>
@@ -196,25 +144,6 @@ export default async function DashboardPage({
           ) : null}
         </div>
       </section>
-
-      {notifications.actionItems.length > 0 ? (
-        <section className="panel">
-          <h2 className="text-lg font-semibold">Actiuni recente</h2>
-          <ul className="mt-3 space-y-2 text-sm">
-            {notifications.actionItems.map((item) => (
-              <li key={item.id}>
-                {item.href ? (
-                  <Link className="font-medium text-clay" href={item.href}>
-                    {item.title}
-                  </Link>
-                ) : (
-                  <span>{item.title}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </div>
   );
 }
