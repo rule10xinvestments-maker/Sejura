@@ -170,26 +170,31 @@ describe("DashboardPage", () => {
     );
   });
 
-  it("turns dashboard cards into tappable panels with selected property details", async () => {
+  it("moves dashboard metrics into compact top indicators", async () => {
     render(await DashboardPage({ searchParams: { propertyId: "property-1" } }));
 
-    expect(screen.queryByRole("heading", { name: "Detalii proprietate" })).not.toBeInTheDocument();
+    const indicators = screen.getByLabelText("Indicatori panou proprietar");
 
-    fireEvent.click(screen.getByRole("button", { name: /Proprietate/ }));
-
-    expect(screen.getByRole("heading", { name: "Detalii proprietate" })).toBeVisible();
-    expect(screen.getByText("Pensiunea Test")).toBeVisible();
-    expect(screen.getByText("Brașov")).toBeVisible();
-    expect(screen.getByText("Personal: nesetat")).toBeVisible();
-    expect(screen.getByRole("link", { name: "Pagina publică" })).toHaveAttribute(
+    expect(within(indicators).getByRole("link", { name: "Camere 0" })).toHaveAttribute(
       "href",
-      "/p/pensiunea-test"
+      "/app/rooms?propertyId=property-1"
     );
-
-    fireEvent.click(screen.getByRole("button", { name: /Camere active/ }));
-
-    expect(screen.queryByRole("heading", { name: "Detalii proprietate" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Camere active" })).toBeVisible();
+    expect(within(indicators).getByRole("link", { name: "Rezervări 0" })).toHaveAttribute(
+      "href",
+      "/app/bookings?propertyId=property-1"
+    );
+    expect(within(indicators).getByRole("link", { name: "Cereri 0" })).toHaveAttribute(
+      "href",
+      "/app/bookings?propertyId=property-1"
+    );
+    expect(within(indicators).getByRole("button", { name: "Acțiuni 0" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Proprietate/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Camere active/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Rezervări active/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Rezervări în așteptare/ })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Acțiuni noi/ })).not.toBeInTheDocument();
   });
 
   it("shows Sejura availability details from confirmed bookings and room blocks", async () => {
@@ -263,30 +268,46 @@ describe("DashboardPage", () => {
     });
 
     render(await DashboardPage({ searchParams: { propertyId: "property-1" } }));
-    fireEvent.click(screen.getByRole("button", { name: /Camere active/ }));
 
-    const roomsPanel = panelById("rooms-panel");
-    expect(within(roomsPanel).getByText("Camera Ocupată")).toBeVisible();
-    expect(within(roomsPanel).getByText("Ocupată acum")).toBeVisible();
-    expect(within(roomsPanel).getByText("Camera Viitoare")).toBeVisible();
-    expect(within(roomsPanel).getByText("Rezervată viitor")).toBeVisible();
-    expect(within(roomsPanel).getByText("Camera Cerere")).toBeVisible();
-    expect(within(roomsPanel).getByText("Liberă acum")).toBeVisible();
-    expect(within(roomsPanel).getByText("Camera Blocată")).toBeVisible();
-    expect(within(roomsPanel).getByText("Indisponibilă")).toBeVisible();
+    const indicators = screen.getByLabelText("Indicatori panou proprietar");
+    expect(within(indicators).getByRole("link", { name: "Camere 4" })).toHaveAttribute(
+      "href",
+      "/app/rooms?propertyId=property-1"
+    );
+    expect(within(indicators).getByRole("link", { name: "Libere 2" })).toHaveAttribute(
+      "href",
+      "/app/calendar?propertyId=property-1"
+    );
+    expect(within(indicators).getByRole("link", { name: "Ocupate 1" })).toHaveAttribute(
+      "href",
+      "/app/calendar?propertyId=property-1"
+    );
+    expect(within(indicators).getByRole("link", { name: "Rezervări 2" })).toHaveAttribute(
+      "href",
+      "/app/bookings?propertyId=property-1"
+    );
+    expect(within(indicators).getByRole("link", { name: "Cereri 1" })).toHaveAttribute(
+      "href",
+      "/app/bookings?propertyId=property-1"
+    );
+    expect(indicators).toHaveTextContent("Calendar Sejura activ");
+    expect(indicators).toHaveTextContent("Google Calendar neconectat");
+
+    const occupiedPanel = panelById("occupied-rooms-panel");
+    expect(within(occupiedPanel).getByText("Camera Ocupată")).toBeVisible();
+    expect(within(occupiedPanel).getByText("Ana Pop")).toBeVisible();
+
+    const futurePanel = panelById("future-bookings-panel");
+    expect(within(futurePanel).getByText("Camera Viitoare")).toBeVisible();
+    expect(within(futurePanel).getByText("Mihai Ionescu")).toBeVisible();
+
+    const pendingPanel = panelById("pending-requests-panel");
+    expect(pendingPanel).toHaveTextContent("Camera Cerere");
+    expect(within(pendingPanel).getByText("Ioana Marin")).toBeVisible();
     expect(screen.queryByText("Camera Altă Proprietate")).not.toBeInTheDocument();
     expect(screen.queryByText("Altă Proprietate")).not.toBeInTheDocument();
     expect(screen.queryByText("Anulat")).not.toBeInTheDocument();
     expect(screen.queryByText("Respins")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /Proprietate/ }));
-
-    const propertyPanel = panelById("property-panel");
-    expect(within(propertyPanel).getByText("Libere acum").nextElementSibling).toHaveTextContent("2");
-    expect(within(propertyPanel).getByText("Ocupate acum").nextElementSibling).toHaveTextContent("1");
-    expect(within(propertyPanel).getByText("Rezervate viitor").nextElementSibling).toHaveTextContent("1");
-    expect(within(propertyPanel).getByText("Cereri în așteptare").nextElementSibling).toHaveTextContent("1");
-    expect(within(propertyPanel).getByText("Google Calendar neconectat")).toBeVisible();
   });
 
   it("expands booking and action cards with scoped links", async () => {
@@ -313,24 +334,34 @@ describe("DashboardPage", () => {
 
     render(await DashboardPage({ searchParams: { propertyId: "property-1" } }));
 
-    fireEvent.click(screen.getByRole("button", { name: /Rezervări active/ }));
-    expect(screen.getByRole("heading", { name: "Rezervări active" })).toBeVisible();
-    expect(screen.getByText("Ana Pop")).toBeVisible();
+    const indicators = screen.getByLabelText("Indicatori panou proprietar");
+    expect(within(indicators).getByRole("link", { name: "Rezervări 1" })).toHaveAttribute(
+      "href",
+      "/app/bookings?propertyId=property-1"
+    );
+    expect(within(indicators).getByRole("link", { name: "Cereri 1" })).toHaveAttribute(
+      "href",
+      "/app/bookings?propertyId=property-1"
+    );
+
+    const occupiedPanel = panelById("occupied-rooms-panel");
+    expect(within(occupiedPanel).getByText("Ana Pop")).toBeVisible();
     expect(screen.getByRole("link", { name: "Vezi rezervarea" })).toHaveAttribute(
       "href",
       "/app/bookings/booking-current?propertyId=property-1"
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Rezervări în așteptare/ }));
-    expect(screen.getByRole("heading", { name: "Rezervări în așteptare" })).toBeVisible();
-    expect(screen.getByText("Ioana Marin")).toBeVisible();
-    expect(screen.getByText("Nu blochează camera până la confirmare.")).toBeVisible();
-    expect(screen.getByRole("link", { name: "Verifică cererea" })).toHaveAttribute(
+    const pendingPanel = panelById("pending-requests-panel");
+    expect(within(pendingPanel).getByText("Ioana Marin")).toBeVisible();
+    expect(
+      within(pendingPanel).getByText("Nu blochează camera până la confirmare.")
+    ).toBeVisible();
+    expect(within(pendingPanel).getByRole("link", { name: "Verifică cererea" })).toHaveAttribute(
       "href",
       "/app/bookings/booking-pending?propertyId=property-1"
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Acțiuni noi/ }));
+    fireEvent.click(within(indicators).getByRole("button", { name: "Acțiuni 3" }));
     const actionsPanel = panelById("actions-panel");
     expect(actionsPanel).toBeVisible();
     expect(within(actionsPanel).getByText("Răspunde oaspetelui")).toBeVisible();

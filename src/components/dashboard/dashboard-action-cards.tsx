@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import {
-  roomBlockCopy,
   roomOccupancyBookingCopy,
   type RoomOccupancySummary
 } from "@/domain/bookings/room-occupancy-summary";
@@ -33,12 +32,6 @@ type DashboardActionCardsProps = {
   };
 };
 
-const priceFormatter = new Intl.NumberFormat("ro-RO", {
-  maximumFractionDigits: 0,
-  style: "currency",
-  currency: "RON"
-});
-
 function moneyCopy(value: number | null, currency = "RON") {
   if (value === null) return null;
 
@@ -49,10 +42,6 @@ function moneyCopy(value: number | null, currency = "RON") {
   }).format(value);
 }
 
-function roomPriceCopy(room: Room) {
-  return `${priceFormatter.format(room.base_price_per_night)}/noapte`;
-}
-
 function googleCalendarStatusCopy(
   connection: SafeGoogleCalendarConnection | null,
   hasSyncFailure: boolean
@@ -61,40 +50,6 @@ function googleCalendarStatusCopy(
   if (connection?.status === "connected") return "Google Calendar conectat";
   if (connection?.status === "needs_reconnect") return "Google Calendar neconectat";
   return "Google Calendar neconectat";
-}
-
-function CardButton({
-  id,
-  label,
-  value,
-  active,
-  onClick
-}: {
-  id: string;
-  label: string;
-  value: string | number;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      aria-controls={`${id}-panel`}
-      aria-expanded={active}
-      className={
-        active
-          ? "min-h-24 rounded-md border border-moss bg-mist p-3 text-left shadow-soft"
-          : "min-h-24 rounded-md border border-line bg-white p-3 text-left transition hover:border-clay hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-clay/30"
-      }
-      onClick={onClick}
-      type="button"
-    >
-      <span className="text-xs font-semibold uppercase text-ink/55">{label}</span>
-      <span className="mt-1 block text-2xl font-bold">{value}</span>
-      <span className="mt-2 block text-sm font-semibold text-clay">
-        {active ? "Ascunde detalii" : "Vezi detalii"}
-      </span>
-    </button>
-  );
 }
 
 function DetailPanel({
@@ -116,6 +71,26 @@ function DetailPanel({
 
 function bookingRoomName(booking: BookingRecord, roomsById: Map<string, Room>) {
   return roomsById.get(booking.room_id)?.name ?? "Cameră";
+}
+
+function IndicatorLink({
+  href,
+  label,
+  value
+}: {
+  href: string;
+  label: string;
+  value: number;
+}) {
+  return (
+    <Link
+      className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-line bg-white px-2.5 py-1 text-sm font-semibold text-ink shadow-sm transition hover:border-clay"
+      href={href}
+    >
+      <span>{label}</span>
+      <span className="rounded bg-mist px-1.5 py-0.5 text-xs text-moss">{value}</span>
+    </Link>
+  );
 }
 
 export function DashboardActionCards({
@@ -142,7 +117,6 @@ export function DashboardActionCards({
     activeRoomIds.has(summary.roomId)
   );
   const occupiedRooms = summaries.filter((summary) => summary.status === "occupied");
-  const blockedRooms = summaries.filter((summary) => summary.status === "blocked");
   const futureReservedRooms = summaries.filter((summary) => summary.nextBooking);
   const freeRooms = summaries.filter(
     (summary) => summary.status === "free" || summary.status === "free-now"
@@ -186,276 +160,158 @@ export function DashboardActionCards({
   };
 
   return (
-    <section className="space-y-3" aria-label="Acțiuni panou proprietar">
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
-        <CardButton
-          active={openCard === "property"}
-          id="property"
-          label="Proprietate"
-          onClick={() => toggleCard("property")}
-          value={property ? "1" : "0"}
-        />
-        <CardButton
-          active={openCard === "rooms"}
-          id="rooms"
-          label="Camere active"
-          onClick={() => toggleCard("rooms")}
+    <section className="space-y-3" aria-label="Indicatori panou proprietar">
+      <div className="flex flex-wrap gap-2">
+        <IndicatorLink
+          href={propertyScopedHref("/app/rooms", propertyId)}
+          label="Camere"
           value={activeRooms.length}
         />
-        <CardButton
-          active={openCard === "confirmed"}
-          id="confirmed"
-          label="Rezervări active"
-          onClick={() => toggleCard("confirmed")}
+        <IndicatorLink
+          href={propertyScopedHref("/app/calendar", propertyId)}
+          label="Libere"
+          value={freeRooms.length}
+        />
+        <IndicatorLink
+          href={propertyScopedHref("/app/calendar", propertyId)}
+          label="Ocupate"
+          value={occupiedRooms.length}
+        />
+        <IndicatorLink
+          href={propertyScopedHref("/app/bookings", propertyId)}
+          label="Rezervări"
           value={confirmedBookings.length}
         />
-        <CardButton
-          active={openCard === "pending"}
-          id="pending"
-          label="Rezervări în așteptare"
-          onClick={() => toggleCard("pending")}
+        <IndicatorLink
+          href={propertyScopedHref("/app/bookings", propertyId)}
+          label="Cereri"
           value={pendingBookings.length}
         />
-        <CardButton
-          active={openCard === "actions"}
-          id="actions"
-          label="Acțiuni noi"
+        <button
+          aria-controls="actions-panel"
+          aria-expanded={openCard === "actions"}
+          className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-line bg-white px-2.5 py-1 text-sm font-semibold text-ink shadow-sm transition hover:border-clay"
           onClick={() => toggleCard("actions")}
-          value={actionItems.length}
-        />
+          type="button"
+        >
+          <span>Acțiuni</span>
+          <span className="rounded bg-mist px-1.5 py-0.5 text-xs text-moss">
+            {actionItems.length}
+          </span>
+        </button>
       </div>
 
-      {openCard === "property" ? (
-        <DetailPanel id="property">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Detalii proprietate</h2>
-              <p className="mt-1 text-sm text-ink/70">
-                {property?.name ?? "Proprietate neconfigurată"}
-              </p>
-              <p className="text-sm text-ink/65">
-                {property?.city ?? "Localitate nesetată"}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              {property ? (
-                <Link className="button-secondary justify-center" href={`/p/${property.slug}`}>
-                  Pagina publică
-                </Link>
-              ) : null}
-              <Link
-                className="button-primary justify-center"
-                href={propertyScopedHref("/app/property", propertyId)}
-              >
-                Configurează proprietatea
-              </Link>
-            </div>
-          </div>
-          <dl className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-            <div className="rounded-md bg-mist/50 p-3">
-              <dt className="text-ink/60">Camere active</dt>
-              <dd className="font-semibold">{activeRooms.length}</dd>
-            </div>
-            <div className="rounded-md bg-mist/50 p-3">
-              <dt className="text-ink/60">Libere acum</dt>
-              <dd className="font-semibold">{freeRooms.length}</dd>
-            </div>
-            <div className="rounded-md bg-mist/50 p-3">
-              <dt className="text-ink/60">Ocupate acum</dt>
-              <dd className="font-semibold">{occupiedRooms.length}</dd>
-            </div>
-            <div className="rounded-md bg-mist/50 p-3">
-              <dt className="text-ink/60">Rezervate viitor</dt>
-              <dd className="font-semibold">{futureReservedRooms.length}</dd>
-            </div>
-            <div className="rounded-md bg-mist/50 p-3">
-              <dt className="text-ink/60">Cereri în așteptare</dt>
-              <dd className="font-semibold">{pendingBookings.length}</dd>
-            </div>
-            <div className="rounded-md bg-mist/50 p-3">
-              <dt className="text-ink/60">Calendar Sejura activ</dt>
-              <dd className="font-semibold">{googleStatus}</dd>
-            </div>
-          </dl>
-          <p className="mt-3 text-sm text-ink/70">Personal: nesetat</p>
+      <p className="text-xs text-ink/60">
+        Calendar Sejura activ · {googleStatus}
+      </p>
+
+      {pendingBookings.length > 0 ? (
+        <DetailPanel id="pending-requests">
+          <h2 className="text-lg font-semibold">Cereri în așteptare</h2>
+          <ul className="mt-3 grid gap-3">
+            {pendingBookings.map((booking) => {
+              const copy = roomOccupancyBookingCopy(
+                booking,
+                property?.check_in_time,
+                property?.check_out_time
+              );
+              const total = moneyCopy(booking.total_estimated_price, booking.currency);
+
+              return (
+                <li
+                  className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                  key={booking.id}
+                >
+                  <p className="font-semibold">{booking.guest_name}</p>
+                  <p>Cameră cerută: {bookingRoomName(booking, roomsById)}</p>
+                  <p>Perioadă: {copy.stayPeriod}</p>
+                  {copy.phone ? <p>Telefon: {copy.phone}</p> : null}
+                  {total ? <p>Total estimat: {total}</p> : null}
+                  <p className="mt-1 font-medium">
+                    Nu blochează camera până la confirmare.
+                  </p>
+                  <Link
+                    className="button-secondary mt-2 w-full justify-center sm:w-fit"
+                    href={propertyScopedHref(`/app/bookings/${booking.id}`, propertyId)}
+                  >
+                    Verifică cererea
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </DetailPanel>
       ) : null}
 
-      {openCard === "rooms" ? (
-        <DetailPanel id="rooms">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold">Camere active</h2>
-            <Link
-              className="button-secondary min-h-10 justify-center px-3 py-2"
-              href={propertyScopedHref("/app/rooms", propertyId)}
-            >
-              Gestionează camere
-            </Link>
-          </div>
-          {visibleRooms.length > 0 ? (
-            <ul className="mt-3 grid gap-3">
-              {visibleRooms.map((room) => {
-                const summary = summaries.find((item) => item.roomId === room.id);
-                const currentCopy = summary?.currentBooking
-                  ? roomOccupancyBookingCopy(
-                      summary.currentBooking,
-                      property?.check_in_time,
-                      property?.check_out_time
-                    )
-                  : null;
-                const nextCopy = summary?.nextBooking
-                  ? roomOccupancyBookingCopy(
-                      summary.nextBooking,
-                      property?.check_in_time,
-                      property?.check_out_time
-                    )
-                  : null;
-                const block = summary?.currentBlock
-                  ? roomBlockCopy(summary.currentBlock)
-                  : null;
-                const state =
-                  room.status !== "active" || summary?.status === "blocked"
-                    ? "Indisponibilă"
-                    : summary?.status === "occupied"
-                      ? "Ocupată acum"
-                      : summary?.nextBooking
-                        ? "Rezervată viitor"
-                        : "Liberă acum";
+      {occupiedRooms.length > 0 ? (
+        <DetailPanel id="occupied-rooms">
+          <h2 className="text-lg font-semibold">Camere ocupate acum</h2>
+          <ul className="mt-3 grid gap-3">
+            {occupiedRooms.map((summary) => {
+              const room = roomsById.get(summary.roomId);
+              const booking = summary.currentBooking;
+              const copy = booking
+                ? roomOccupancyBookingCopy(
+                    booking,
+                    property?.check_in_time,
+                    property?.check_out_time
+                  )
+                : null;
 
-                return (
-                  <li className="rounded-md border border-line p-3 text-sm" key={room.id}>
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="font-semibold">{room.name}</p>
-                        <p className="text-ink/65">
-                          {room.max_guests} oaspeți · {roomPriceCopy(room)}
-                        </p>
-                      </div>
-                      <p className="w-fit rounded-md bg-mist px-2 py-1 text-xs font-semibold text-moss">
-                        {state}
-                      </p>
-                    </div>
-                    {currentCopy && summary?.currentBooking ? (
-                      <div className="mt-3 grid gap-1">
-                        <p>{currentCopy.guestName}</p>
-                        <p>Perioadă: {currentCopy.stayPeriod}</p>
-                        <p>Se eliberează: {currentCopy.checkout}</p>
-                        {currentCopy.phone ? <p>Telefon: {currentCopy.phone}</p> : null}
-                        <Link
-                          className="button-secondary mt-2 w-full justify-center sm:w-fit"
-                          href={propertyScopedHref(
-                            `/app/bookings/${summary.currentBooking.id}`,
-                            propertyId
-                          )}
-                        >
-                          Vezi rezervarea
-                        </Link>
-                      </div>
-                    ) : null}
-                    {nextCopy && summary?.nextBooking ? (
-                      <div className="mt-3 grid gap-1">
-                        <p>Următoarea rezervare: {nextCopy.guestName}</p>
-                        <p>Perioadă: {nextCopy.stayPeriod}</p>
-                        <p>Se ocupă de la: {nextCopy.checkIn}</p>
-                        <p>Se eliberează: {nextCopy.checkout}</p>
-                        <Link
-                          className="button-secondary mt-2 w-full justify-center sm:w-fit"
-                          href={propertyScopedHref(
-                            `/app/bookings/${summary.nextBooking.id}`,
-                            propertyId
-                          )}
-                        >
-                          Vezi rezervarea
-                        </Link>
-                      </div>
-                    ) : null}
-                    {block ? (
-                      <p className="mt-3 text-ink/70">
-                        Indisponibilă: {block.period}. Motiv: {block.reason}
-                      </p>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="mt-3 text-sm text-ink/65">Nu ai camere configurate încă.</p>
-          )}
+              if (!room || !booking || !copy) return null;
+
+              return (
+                <li className="rounded-md border border-line p-3 text-sm" key={room.id}>
+                  <p className="font-semibold">{room.name}</p>
+                  <p>{copy.guestName}</p>
+                  <p>Perioadă: {copy.stayPeriod}</p>
+                  <p>Se eliberează: {copy.checkout}</p>
+                  <Link
+                    className="button-secondary mt-2 w-full justify-center sm:w-fit"
+                    href={propertyScopedHref(`/app/bookings/${booking.id}`, propertyId)}
+                  >
+                    Vezi rezervarea
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </DetailPanel>
       ) : null}
 
-      {openCard === "confirmed" ? (
-        <DetailPanel id="confirmed">
-          <h2 className="text-lg font-semibold">Rezervări active</h2>
-          {confirmedBookings.length > 0 ? (
-            <ul className="mt-3 grid gap-3">
-              {confirmedBookings.map((booking) => {
-                const copy = roomOccupancyBookingCopy(
-                  booking,
-                  property?.check_in_time,
-                  property?.check_out_time
-                );
-                const total = moneyCopy(booking.total_estimated_price, booking.currency);
+      {futureReservedRooms.length > 0 ? (
+        <DetailPanel id="future-bookings">
+          <h2 className="text-lg font-semibold">Următoarele rezervări</h2>
+          <ul className="mt-3 grid gap-3">
+            {futureReservedRooms.map((summary) => {
+              const room = roomsById.get(summary.roomId);
+              const booking = summary.nextBooking;
+              const copy = booking
+                ? roomOccupancyBookingCopy(
+                    booking,
+                    property?.check_in_time,
+                    property?.check_out_time
+                  )
+                : null;
 
-                return (
-                  <li className="rounded-md border border-line p-3 text-sm" key={booking.id}>
-                    <p className="font-semibold">{booking.guest_name}</p>
-                    <p>{bookingRoomName(booking, roomsById)}</p>
-                    <p>Perioadă: {copy.stayPeriod}</p>
-                    {copy.phone ? <p>Telefon: {copy.phone}</p> : null}
-                    {total ? <p>Total estimat: {total}</p> : null}
-                    <Link
-                      className="button-secondary mt-2 w-full justify-center sm:w-fit"
-                      href={propertyScopedHref(`/app/bookings/${booking.id}`, propertyId)}
-                    >
-                      Vezi rezervarea
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="mt-2 text-sm text-ink/65">Nu există rezervări active.</p>
-          )}
-        </DetailPanel>
-      ) : null}
+              if (!room || !booking || !copy) return null;
 
-      {openCard === "pending" ? (
-        <DetailPanel id="pending">
-          <h2 className="text-lg font-semibold">Rezervări în așteptare</h2>
-          {pendingBookings.length > 0 ? (
-            <ul className="mt-3 grid gap-3">
-              {pendingBookings.map((booking) => {
-                const copy = roomOccupancyBookingCopy(
-                  booking,
-                  property?.check_in_time,
-                  property?.check_out_time
-                );
-                const total = moneyCopy(booking.total_estimated_price, booking.currency);
-
-                return (
-                  <li className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950" key={booking.id}>
-                    <p className="font-semibold">{booking.guest_name}</p>
-                    <p>Cameră cerută: {bookingRoomName(booking, roomsById)}</p>
-                    <p>Perioadă: {copy.stayPeriod}</p>
-                    {copy.phone ? <p>Telefon: {copy.phone}</p> : null}
-                    {total ? <p>Total estimat: {total}</p> : null}
-                    <p className="mt-1 font-medium">
-                      Nu blochează camera până la confirmare.
-                    </p>
-                    <Link
-                      className="button-secondary mt-2 w-full justify-center sm:w-fit"
-                      href={propertyScopedHref(`/app/bookings/${booking.id}`, propertyId)}
-                    >
-                      Verifică cererea
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="mt-2 text-sm text-ink/65">Nu există rezervări în așteptare.</p>
-          )}
+              return (
+                <li className="rounded-md border border-line p-3 text-sm" key={booking.id}>
+                  <p className="font-semibold">{room.name}</p>
+                  <p>{copy.guestName}</p>
+                  <p>Perioadă: {copy.stayPeriod}</p>
+                  <p>Se ocupă de la: {copy.checkIn}</p>
+                  <Link
+                    className="button-secondary mt-2 w-full justify-center sm:w-fit"
+                    href={propertyScopedHref(`/app/bookings/${booking.id}`, propertyId)}
+                  >
+                    Vezi rezervarea
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </DetailPanel>
       ) : null}
 
