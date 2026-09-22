@@ -222,4 +222,33 @@ describe("public property page", () => {
     expect(screen.getByText("Peștera Pusnicului")).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Camere disponibile" })).not.toBeInTheDocument();
   });
+
+  it("does not use room photos as the property hero fallback", async () => {
+    photoMocks.listPublicPropertyPhotos.mockResolvedValueOnce([]);
+    photoMocks.listPublicRoomPhotos.mockResolvedValueOnce([
+      {
+        id: "room-photo-1",
+        owner_id: "owner-1",
+        property_id: "property-1",
+        room_id: "room-1",
+        storage_path: "owner-1/property-1/rooms/room-1/cover.jpg",
+        public_url: "https://signed.example/room-cover.jpg",
+        alt_text: "Poza camerei",
+        sort_order: 0,
+        is_cover: true,
+        created_at: "2026-01-01T00:00:00.000Z"
+      }
+    ]);
+
+    render(await PublicPropertyPage({ params: { propertySlug: "pestera-pusnicului" } }));
+
+    const propertyHero = screen
+      .getByText("Cerere de rezervare prin Sejura")
+      .closest("section");
+    const roomCard = screen.getByText("Camera Verde").closest("li");
+
+    expect(propertyHero?.querySelector('img[src="https://signed.example/room-cover.jpg"]')).toBeNull();
+    expect(roomCard?.querySelector('img[src="https://signed.example/room-cover.jpg"]')).not.toBeNull();
+    expect(screen.queryByLabelText("Galerie proprietate")).not.toBeInTheDocument();
+  });
 });

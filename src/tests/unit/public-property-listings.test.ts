@@ -5,6 +5,7 @@ import type { Database } from "@/lib/supabase/types";
 type Property = Database["public"]["Tables"]["properties"]["Row"];
 type PublicPage = Database["public"]["Tables"]["property_public_pages"]["Row"];
 type Room = Database["public"]["Tables"]["rooms"]["Row"];
+type PropertyPhoto = Database["public"]["Tables"]["property_photos"]["Row"];
 
 function property(overrides: Partial<Property>): Property {
   return {
@@ -56,6 +57,21 @@ function room(overrides: Partial<Room>): Room {
   };
 }
 
+function propertyPhoto(overrides: Partial<PropertyPhoto>): PropertyPhoto {
+  return {
+    id: "property-photo-1",
+    owner_id: "owner-1",
+    property_id: "property-1",
+    storage_path: "owner-1/property-1/property/cover.jpg",
+    public_url: "https://signed.example/property-cover.jpg",
+    alt_text: null,
+    sort_order: 0,
+    is_cover: false,
+    created_at: "2026-01-01T00:00:00.000Z",
+    ...overrides
+  };
+}
+
 describe("public property listings", () => {
   it("lists public enabled properties with active room count and from price", () => {
     const listings = buildPublicPropertyListings({
@@ -92,5 +108,40 @@ describe("public property listings", () => {
     });
 
     expect(listings).toEqual([]);
+  });
+
+  it("uses only property photos for public listing cover images", () => {
+    const listingsWithoutPropertyPhotos = buildPublicPropertyListings({
+      publicPages: [publicPage({})],
+      properties: [property({})],
+      rooms: [room({})],
+      propertyPhotos: []
+    });
+
+    const listingsWithPropertyPhotos = buildPublicPropertyListings({
+      publicPages: [publicPage({})],
+      properties: [property({})],
+      rooms: [room({})],
+      propertyPhotos: [
+        propertyPhoto({
+          id: "gallery-first",
+          public_url: "https://signed.example/gallery-first.jpg"
+        }),
+        propertyPhoto({
+          id: "cover",
+          public_url: "https://signed.example/property-cover.jpg",
+          is_cover: true
+        })
+      ]
+    });
+
+    expect(listingsWithoutPropertyPhotos[0]).toMatchObject({
+      coverPhotoUrl: null,
+      coverPhotoAlt: "Peștera Pusnicului"
+    });
+    expect(listingsWithPropertyPhotos[0]).toMatchObject({
+      coverPhotoUrl: "https://signed.example/property-cover.jpg",
+      coverPhotoAlt: "Peștera Pusnicului"
+    });
   });
 });

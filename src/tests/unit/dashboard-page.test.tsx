@@ -1,6 +1,6 @@
 import React from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardPage from "@/app/(protected)/app/page";
 import type { BookingRecord, RoomBlockRecord } from "@/domain/bookings/types";
 import type { Property } from "@/domain/properties/types";
@@ -125,6 +125,8 @@ function panelById(id: string) {
 
 describe("DashboardPage", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-20T09:00:00.000Z"));
     dashboardMocks.getCurrentOwnerId.mockResolvedValue("owner-1");
     dashboardMocks.loadDashboardData.mockResolvedValue({
       property: property(),
@@ -135,6 +137,10 @@ describe("DashboardPage", () => {
       notifications: { unreadCount: 0, actionItems: [] },
       activation: { ready: true, missingRequirements: [] }
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("shows a dashboard shortcut to the internal calendar", async () => {

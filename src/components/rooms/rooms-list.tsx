@@ -10,6 +10,7 @@ import {
 import type { Property } from "@/domain/properties/types";
 import { roomCoverPhoto } from "@/domain/photos/service";
 import type { RoomPhoto } from "@/domain/photos/types";
+import { propertyScopedHref } from "@/domain/properties/navigation";
 import type { RoomFormState } from "@/domain/rooms/form-state";
 import type { Room } from "@/domain/rooms/types";
 
@@ -231,7 +232,10 @@ export function RoomsList({
                     <p>Status rezervare: {currentBookingCopy.statusLabel}</p>
                     <Link
                       className="button-secondary mt-1 w-full justify-center sm:w-fit"
-                      href={`/app/bookings/${occupancy.currentBooking.id}`}
+                      href={propertyScopedHref(
+                        `/app/bookings/${occupancy.currentBooking.id}`,
+                        property.id
+                      )}
                     >
                       Vezi rezervarea
                     </Link>
@@ -258,7 +262,10 @@ export function RoomsList({
                     <p>Status rezervare: {nextBookingCopy.statusLabel}</p>
                     <Link
                       className="button-secondary mt-1 w-full justify-center sm:w-fit"
-                      href={`/app/bookings/${occupancy.nextBooking.id}`}
+                      href={propertyScopedHref(
+                        `/app/bookings/${occupancy.nextBooking.id}`,
+                        property.id
+                      )}
                     >
                       Vezi rezervarea
                     </Link>
@@ -310,7 +317,10 @@ export function RoomsList({
                             <p>Status: {pendingCopy.statusLabel}</p>
                             <Link
                               className="button-secondary mt-2 w-full justify-center sm:w-fit"
-                              href={`/app/bookings/${booking.id}`}
+                              href={propertyScopedHref(
+                                `/app/bookings/${booking.id}`,
+                                property.id
+                              )}
                             >
                               Vezi cererea
                             </Link>

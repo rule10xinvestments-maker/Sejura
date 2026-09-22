@@ -301,11 +301,11 @@ describe("RoomsList", () => {
     expect(screen.getByText("Nu blochează camera până la confirmare.")).toBeVisible();
     expect(screen.getByRole("link", { name: "Vezi rezervarea" })).toHaveAttribute(
       "href",
-      "/app/bookings/booking-1"
+      "/app/bookings/booking-1?propertyId=property-1"
     );
     expect(screen.getByRole("link", { name: "Vezi cererea" })).toHaveAttribute(
       "href",
-      "/app/bookings/pending-1"
+      "/app/bookings/pending-1?propertyId=property-1"
     );
   });
 });
